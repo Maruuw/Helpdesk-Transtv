@@ -12,7 +12,7 @@ interface CreateTicketPageProps {
     description: string;
   }) => void;
   onLogout: () => void;
-  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets') => void;
+  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category') => void;
 }
 
 // Master Data: Dependent Category Mapping

@@ -33,6 +33,7 @@ interface DashboardPageProps {
   onLogout?: () => void;
   onCreateTicket?: () => void;
   onViewAllTickets?: () => void;
+  onNavigateMasterCategory?: () => void;
   onSelectTicket?: (ticket: TicketRequestItem) => void;
   tickets?: TicketRequestItem[];
 }
@@ -116,6 +117,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onLogout,
   onCreateTicket,
   onViewAllTickets,
+  onNavigateMasterCategory,
   onSelectTicket,
   tickets = initialLatestRequests,
 }) => {
@@ -136,6 +138,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         onNavigate={(item) => {
           if (item === 'create-ticket') onCreateTicket?.();
           if (item === 'my-tickets') onViewAllTickets?.();
+          if (item === 'master-category') onNavigateMasterCategory?.();
         }}
       />
 

@@ -5,8 +5,9 @@ import type { TicketRequestItem } from './pages/DashboardPage';
 import { CreateTicketPage } from './pages/CreateTicketPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
 import { TicketDetailPage } from './pages/TicketDetailPage';
+import { MasterCategoryPage } from './pages/MasterCategoryPage';
 
-export type AppView = 'login' | 'dashboard' | 'create-ticket' | 'my-tickets' | 'ticket-detail';
+export type AppView = 'login' | 'dashboard' | 'create-ticket' | 'my-tickets' | 'ticket-detail' | 'master-category';
 
 function App() {
   const [currentView, setCurrentView] = useState<AppView>('login');
@@ -106,6 +107,7 @@ function App() {
           onLogout={() => setCurrentView('login')}
           onCreateTicket={() => setCurrentView('create-ticket')}
           onViewAllTickets={() => setCurrentView('my-tickets')}
+          onNavigateMasterCategory={() => setCurrentView('master-category')}
           onSelectTicket={handleSelectTicket}
         />
       )}
@@ -136,6 +138,13 @@ function App() {
           onNavigate={(view) => setCurrentView(view)}
           onLogout={() => setCurrentView('login')}
           onUpdateTicket={handleUpdateTicket}
+        />
+      )}
+
+      {currentView === 'master-category' && (
+        <MasterCategoryPage
+          onLogout={() => setCurrentView('login')}
+          onNavigate={(view) => setCurrentView(view)}
         />
       )}
     </div>

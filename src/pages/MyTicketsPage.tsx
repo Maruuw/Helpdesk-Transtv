@@ -6,7 +6,7 @@ import { Plus, Search, AlertCircle } from 'lucide-react';
 
 interface MyTicketsPageProps {
   tickets: TicketRequestItem[];
-  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets') => void;
+  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category') => void;
   onLogout: () => void;
   onCreateTicket: () => void;
   onSelectTicket: (ticket: TicketRequestItem) => void;

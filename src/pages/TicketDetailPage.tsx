@@ -21,7 +21,7 @@ import {
 interface TicketDetailPageProps {
   ticket: TicketRequestItem;
   onBack: () => void;
-  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets') => void;
+  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category') => void;
   onLogout: () => void;
   onUpdateTicket?: (
     ticketId: string,

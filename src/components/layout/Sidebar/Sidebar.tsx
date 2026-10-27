@@ -1,6 +1,6 @@
 import React from 'react';
 import type { SidebarProps, ActiveMenuItem } from './Sidebar.types';
-import { DashboardIcon, CreateTicketIcon, DaftarTicketIcon } from './SidebarIcons';
+import { DashboardIcon, CreateTicketIcon, DaftarTicketIcon, MasterCategoryIcon } from './SidebarIcons';
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeItem = 'dashboard',
@@ -22,6 +22,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'my-tickets' as ActiveMenuItem,
       label: 'Daftar Tiket',
       icon: DaftarTicketIcon,
+    },
+    {
+      id: 'master-category' as ActiveMenuItem,
+      label: 'Master Kategori',
+      icon: MasterCategoryIcon,
     },
   ];
 

@@ -79,3 +79,22 @@ export const LogoutIcon: React.FC<{ className?: string }> = ({ className = 'w-5 
     </defs>
   </svg>
 );
+
+export const MasterCategoryIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5 text-current' }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <path
+      d="M3.75 6.75C3.75 5.50736 4.75736 4.5 6 4.5H9.75C10.3467 4.5 10.919 4.73705 11.341 5.15898L12.841 6.65898C13.2629 7.08092 13.8353 7.31797 14.432 7.31797H18C19.2426 7.31797 20.25 8.32533 20.25 9.56797V17.25C20.25 18.4926 19.2426 19.5 18 19.5H6C4.75736 19.5 3.75 18.4926 3.75 17.25V6.75Z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M12 11V15M9.75 13H14.25"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);

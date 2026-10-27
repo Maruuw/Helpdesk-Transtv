@@ -214,7 +214,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
       />
 
       {/* ================= RIGHT MAIN CONTENT ================= */}
-      <main className="flex-1 h-screen overflow-y-auto px-6 md:px-10 py-6 custom-scrollbar flex flex-col">
+      <main className="flex-1 h-screen overflow-y-auto px-6 md:px-10 py-6 pb-16 custom-scrollbar flex flex-col">
         {/* Top Header with Helpdesk Brand & Profile */}
         <div className="flex items-center justify-between mb-7 flex-shrink-0">
           {/* Left: Helpdesk Brand Logo */}
@@ -411,7 +411,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
         </Card>
 
         {/* ================= CARD 2: CATEGORY LIST & TABLE ================= */}
-        <Card radius="xl" className="p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-6 flex-1 flex flex-col min-h-0">
+        <Card radius="xl" className="p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-8 flex-shrink-0">
           {/* Controls: Sort By (Departement, Status) & Search */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6 flex-shrink-0">
             {/* Left: Sort By Filters */}

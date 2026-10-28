@@ -3,6 +3,8 @@ import { Sidebar } from '@/components/layout';
 import { Button, Card } from '@/components/ui';
 import { ChevronDown, FileText, X, AlertCircle, Plus } from 'lucide-react';
 
+import type { AppView } from '@/App';
+
 interface CreateTicketPageProps {
   onCancel: () => void;
   onSubmitSuccess: (newTicket: {
@@ -12,7 +14,7 @@ interface CreateTicketPageProps {
     description: string;
   }) => void;
   onLogout: () => void;
-  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category') => void;
+  onNavigate: (view: AppView) => void;
 }
 
 // Master Data: Dependent Category Mapping

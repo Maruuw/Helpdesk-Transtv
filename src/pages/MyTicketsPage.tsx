@@ -4,9 +4,11 @@ import { Card, Badge, Button } from '@/components/ui';
 import type { TicketRequestItem } from './DashboardPage';
 import { Plus, Search, AlertCircle } from 'lucide-react';
 
+import type { AppView } from '@/App';
+
 interface MyTicketsPageProps {
   tickets: TicketRequestItem[];
-  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category') => void;
+  onNavigate: (view: AppView) => void;
   onLogout: () => void;
   onCreateTicket: () => void;
   onSelectTicket: (ticket: TicketRequestItem) => void;

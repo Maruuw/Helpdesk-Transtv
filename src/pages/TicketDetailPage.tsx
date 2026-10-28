@@ -18,10 +18,12 @@ import {
   X,
 } from 'lucide-react';
 
+import type { AppView } from '@/App';
+
 interface TicketDetailPageProps {
   ticket: TicketRequestItem;
   onBack: () => void;
-  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category') => void;
+  onNavigate: (view: AppView) => void;
   onLogout: () => void;
   onUpdateTicket?: (
     ticketId: string,

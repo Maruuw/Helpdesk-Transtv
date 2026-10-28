@@ -1,4 +1,4 @@
-export type ActiveMenuItem = 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category';
+export type ActiveMenuItem = 'dashboard' | 'create-ticket' | 'my-tickets' | 'report' | 'master-category';
 
 export interface SidebarProps {
   activeItem?: ActiveMenuItem;

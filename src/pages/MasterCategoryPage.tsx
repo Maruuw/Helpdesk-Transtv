@@ -20,8 +20,10 @@ export interface CategoryItem {
   status: string; // e.g. 'IT Software Development', 'HRIS', etc.
 }
 
+import type { AppView } from '@/App';
+
 interface MasterCategoryPageProps {
-  onNavigate: (view: 'dashboard' | 'create-ticket' | 'my-tickets' | 'master-category') => void;
+  onNavigate: (view: AppView) => void;
   onLogout: () => void;
 }
 
@@ -140,8 +142,8 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
       selectedDept === 'Human Capital'
         ? 'HRIS'
         : selectedDept === 'Informatika'
-        ? 'IT Software Development'
-        : `${selectedDept} Team`;
+          ? 'IT Software Development'
+          : `${selectedDept} Team`;
 
     const newCategory: CategoryItem = {
       id: `cat-${Date.now()}`,
@@ -274,19 +276,17 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                     setIsDeptDropdownOpen((prev) => !prev);
                     setIsGroupDropdownOpen(false);
                   }}
-                  className={`w-full px-4 py-3 rounded-[12px] md:rounded-[14px] border text-left flex items-center justify-between text-[13.5px] transition-all cursor-pointer bg-white ${
-                    isDeptDropdownOpen
+                  className={`w-full px-4 py-3 rounded-[12px] md:rounded-[14px] border text-left flex items-center justify-between text-[13.5px] transition-all cursor-pointer bg-white ${isDeptDropdownOpen
                       ? 'border-[#2563EB] ring-2 ring-blue-100'
                       : 'border-[#CBD5E1] hover:border-slate-400'
-                  }`}
+                    }`}
                 >
                   <span className={selectedDept ? 'font-semibold text-[#0F172A]' : 'text-[#64748B]'}>
                     {selectedDept || 'Select a group'}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${
-                      isDeptDropdownOpen ? 'rotate-180 text-[#2563EB]' : ''
-                    }`}
+                    className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${isDeptDropdownOpen ? 'rotate-180 text-[#2563EB]' : ''
+                      }`}
                   />
                 </button>
 
@@ -302,9 +302,8 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                           setIsDeptDropdownOpen(false);
                           if (formError) setFormError(null);
                         }}
-                        className={`w-full px-4 py-2.5 text-left flex items-center justify-between text-[13px] transition-colors hover:bg-slate-50 cursor-pointer ${
-                          selectedDept === dept ? 'bg-blue-50/70 font-semibold text-[#2563EB]' : 'text-[#0F172A]'
-                        }`}
+                        className={`w-full px-4 py-2.5 text-left flex items-center justify-between text-[13px] transition-colors hover:bg-slate-50 cursor-pointer ${selectedDept === dept ? 'bg-blue-50/70 font-semibold text-[#2563EB]' : 'text-[#0F172A]'
+                          }`}
                       >
                         <span>{dept}</span>
                         {selectedDept === dept && <Check className="w-4 h-4 text-[#2563EB]" />}
@@ -325,19 +324,17 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                     setIsGroupDropdownOpen((prev) => !prev);
                     setIsDeptDropdownOpen(false);
                   }}
-                  className={`w-full px-4 py-3 rounded-[12px] md:rounded-[14px] border text-left flex items-center justify-between text-[13.5px] transition-all cursor-pointer bg-white ${
-                    isGroupDropdownOpen
+                  className={`w-full px-4 py-3 rounded-[12px] md:rounded-[14px] border text-left flex items-center justify-between text-[13.5px] transition-all cursor-pointer bg-white ${isGroupDropdownOpen
                       ? 'border-[#2563EB] ring-2 ring-blue-100'
                       : 'border-[#CBD5E1] hover:border-slate-400'
-                  }`}
+                    }`}
                 >
                   <span className={selectedGroup ? 'font-semibold text-[#0F172A]' : 'text-[#64748B]'}>
                     {selectedGroup || 'Select a group'}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${
-                      isGroupDropdownOpen ? 'rotate-180 text-[#2563EB]' : ''
-                    }`}
+                    className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${isGroupDropdownOpen ? 'rotate-180 text-[#2563EB]' : ''
+                      }`}
                   />
                 </button>
 
@@ -353,9 +350,8 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                           setIsGroupDropdownOpen(false);
                           if (formError) setFormError(null);
                         }}
-                        className={`w-full px-4 py-2.5 text-left flex items-center justify-between text-[13px] transition-colors hover:bg-slate-50 cursor-pointer ${
-                          selectedGroup === grp ? 'bg-blue-50/70 font-semibold text-[#2563EB]' : 'text-[#0F172A]'
-                        }`}
+                        className={`w-full px-4 py-2.5 text-left flex items-center justify-between text-[13px] transition-colors hover:bg-slate-50 cursor-pointer ${selectedGroup === grp ? 'bg-blue-50/70 font-semibold text-[#2563EB]' : 'text-[#0F172A]'
+                          }`}
                       >
                         <span>{grp}</span>
                         {selectedGroup === grp && <Check className="w-4 h-4 text-[#2563EB]" />}
@@ -404,7 +400,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                 type="submit"
                 className="px-7 py-2.5 rounded-full bg-[#153F85] hover:bg-[#0e2c5e] text-white text-[13px] font-bold shadow-sm transition-all cursor-pointer active:scale-95"
               >
-                Send ticket
+                Create
               </button>
             </div>
           </form>
@@ -428,11 +424,10 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                     setIsFilterDeptOpen((prev) => !prev);
                     setIsFilterStatusOpen(false);
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[12.5px] font-semibold transition-all cursor-pointer ${
-                    filterDept !== 'All'
+                  className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[12.5px] font-semibold transition-all cursor-pointer ${filterDept !== 'All'
                       ? 'border-[#153F85] bg-blue-50 text-[#153F85]'
                       : 'border-slate-300 hover:border-slate-400 text-[#0F172A] bg-white'
-                  }`}
+                    }`}
                 >
                   <span>{filterDept === 'All' ? 'Departement' : filterDept}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-[#64748B]" />
@@ -458,9 +453,8 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                           setFilterDept(dept);
                           setIsFilterDeptOpen(false);
                         }}
-                        className={`w-full px-4 py-2 text-left text-[12.5px] hover:bg-slate-50 cursor-pointer ${
-                          filterDept === dept ? 'bg-blue-50 text-[#2563EB] font-bold' : 'text-[#0F172A]'
-                        }`}
+                        className={`w-full px-4 py-2 text-left text-[12.5px] hover:bg-slate-50 cursor-pointer ${filterDept === dept ? 'bg-blue-50 text-[#2563EB] font-bold' : 'text-[#0F172A]'
+                          }`}
                       >
                         {dept}
                       </button>
@@ -477,11 +471,10 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                     setIsFilterStatusOpen((prev) => !prev);
                     setIsFilterDeptOpen(false);
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[12.5px] font-semibold transition-all cursor-pointer ${
-                    filterStatus !== 'All'
+                  className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[12.5px] font-semibold transition-all cursor-pointer ${filterStatus !== 'All'
                       ? 'border-[#153F85] bg-blue-50 text-[#153F85]'
                       : 'border-slate-300 hover:border-slate-400 text-[#0F172A] bg-white'
-                  }`}
+                    }`}
                 >
                   <span>{filterStatus === 'All' ? 'Status' : filterStatus}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-[#64748B]" />
@@ -507,9 +500,8 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                           setFilterStatus(st);
                           setIsFilterStatusOpen(false);
                         }}
-                        className={`w-full px-4 py-2 text-left text-[12.5px] hover:bg-slate-50 cursor-pointer ${
-                          filterStatus === st ? 'bg-blue-50 text-[#2563EB] font-bold' : 'text-[#0F172A]'
-                        }`}
+                        className={`w-full px-4 py-2 text-left text-[12.5px] hover:bg-slate-50 cursor-pointer ${filterStatus === st ? 'bg-blue-50 text-[#2563EB] font-bold' : 'text-[#0F172A]'
+                          }`}
                       >
                         {st}
                       </button>

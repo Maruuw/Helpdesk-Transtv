@@ -6,8 +6,9 @@ import { CreateTicketPage } from './pages/CreateTicketPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
 import { TicketDetailPage } from './pages/TicketDetailPage';
 import { MasterCategoryPage } from './pages/MasterCategoryPage';
+import { ReportPage } from './pages/ReportPage';
 
-export type AppView = 'login' | 'dashboard' | 'create-ticket' | 'my-tickets' | 'ticket-detail' | 'master-category';
+export type AppView = 'login' | 'dashboard' | 'create-ticket' | 'my-tickets' | 'ticket-detail' | 'master-category' | 'report';
 
 function App() {
   const [currentView, setCurrentView] = useState<AppView>('login');
@@ -108,6 +109,7 @@ function App() {
           onCreateTicket={() => setCurrentView('create-ticket')}
           onViewAllTickets={() => setCurrentView('my-tickets')}
           onNavigateMasterCategory={() => setCurrentView('master-category')}
+          onNavigate={(view) => setCurrentView(view)}
           onSelectTicket={handleSelectTicket}
         />
       )}
@@ -143,6 +145,13 @@ function App() {
 
       {currentView === 'master-category' && (
         <MasterCategoryPage
+          onLogout={() => setCurrentView('login')}
+          onNavigate={(view) => setCurrentView(view)}
+        />
+      )}
+
+      {currentView === 'report' && (
+        <ReportPage
           onLogout={() => setCurrentView('login')}
           onNavigate={(view) => setCurrentView(view)}
         />

@@ -14,6 +14,11 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
         text: 'text-[#2563EB]',
         dot: 'bg-[#2563EB]',
       },
+      'On Process': {
+        bg: 'bg-[#E7F0FD]',
+        text: 'text-[#2563EB]',
+        dot: 'bg-[#2563EB]',
+      },
       'Waiting': {
         bg: 'bg-[#FEF5E7]',
         text: 'text-[#C97D0C]',

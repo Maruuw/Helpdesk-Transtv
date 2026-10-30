@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Sidebar } from '@/components/layout';
 import type { AppView } from '@/App';
 import {
@@ -7,7 +7,9 @@ import {
   FileSpreadsheet,
   CheckCircle2,
   X,
+  RefreshCw,
 } from 'lucide-react';
+import { helpdeskApi } from '@/services/api';
 
 export interface ReportItem {
   id: string;
@@ -24,6 +26,7 @@ export interface ReportItem {
   handledOn: string;
   year: number;
   month: string;
+  status?: string;
 }
 
 interface ReportPageProps {
@@ -98,7 +101,7 @@ const INITIAL_REPORT_DATA: ReportItem[] = [
     handledByColor: 'bg-[#EDE9FE] text-[#6D28D9]',
     solution: 'Menu pembuatan Request Voucher (RV) pada modul Budget Insosys telah diaktifkan untuk user terkait.',
     categoryDetail: 'Aplikasi Insosys - Modul Budget (Tambah/Modifikasi Menu)',
-    handledOn: '22 Jan 2024, 16:30',
+    handledOn: '22 Jan 2024, 10:30',
     year: 2024,
     month: 'Januari',
   },
@@ -112,160 +115,25 @@ const INITIAL_REPORT_DATA: ReportItem[] = [
     handledByName: 'Indah Astya Ningrum',
     handledByInitials: 'IA',
     handledByColor: 'bg-[#EDE9FE] text-[#6D28D9]',
-    solution: 'Data master rekanan vendor PT Multi Karya telah diperbarui sesuai lampiran NPWP dan rekening koran.',
-    categoryDetail: 'Aplikasi Insosys (Umum) (Perubahan Data Rekanan)',
-    handledOn: '28 Jan 2024, 10:45',
+    solution: 'Data identitas dan rekening rekanan telah disesuaikan dengan dokumen terbaru.',
+    categoryDetail: 'Aplikasi Insosys (Perubahan Data Master Rekanan)',
+    handledOn: '29 Jan 2024, 16:45',
     year: 2024,
     month: 'Januari',
   },
-  {
-    id: 'rep-6',
-    ticketSubject: 'Reset Password Akun TransHub & VPN Cisco',
-    ticketSubtitle: 'Akun & Keamanan Sistem',
-    requesterName: 'Budi Santoso',
-    requesterDept: 'Finance & Accounting',
-    group: 'IT Support',
-    handledByName: 'Genito Irhamsyah',
-    handledByInitials: 'GI',
-    handledByColor: 'bg-[#EDE9FE] text-[#6D28D9]',
-    solution: 'Kredensial OTP telah di-reset dan instruksi login ulang dikirim ke email dinas.',
-    categoryDetail: 'User Account & Security (Password Reset)',
-    handledOn: '4 Feb 2024, 09:15',
-    year: 2024,
-    month: 'Februari',
-  },
-  {
-    id: 'rep-7',
-    ticketSubject: 'Koneksi Printer Shared Studio News Offline',
-    ticketSubtitle: 'Hardware & Jaringan Kantor',
-    requesterName: 'Dewi Lestari',
-    requesterDept: 'News Production',
-    group: 'IT Support',
-    handledByName: 'Wahidin',
-    handledByInitials: 'W',
-    handledByColor: 'bg-[#F3E8FF] text-[#7E22CE]',
-    solution: 'IP static printer di-reassign pada switch lantai 3 dan test print berhasil lancar.',
-    categoryDetail: 'Perangkat Keras & Jaringan (Printer Network)',
-    handledOn: '12 Feb 2024, 13:40',
-    year: 2024,
-    month: 'Februari',
-  },
-  {
-    id: 'rep-8',
-    ticketSubject: 'Pengajuan Lisensi Adobe Premiere Pro 2025',
-    ticketSubtitle: 'Software License',
-    requesterName: 'Rian Pratama',
-    requesterDept: 'Creative & Post Pro',
-    group: 'IT Software Development',
-    handledByName: 'Niel Hakim Pradana',
-    handledByInitials: 'NH',
-    handledByColor: 'bg-[#DBEAFE] text-[#1D4ED8]',
-    solution: 'Lisensi Creative Cloud Enterprise telah dialokasikan ke akun email pemohon.',
-    categoryDetail: 'Software License (Adobe Creative Cloud)',
-    handledOn: '19 Mar 2024, 15:10',
-    year: 2024,
-    month: 'Maret',
-  },
-  {
-    id: 'rep-9',
-    ticketSubject: 'Optimalisasi Query Laporan Pajak Tahunan',
-    ticketSubtitle: 'Aplikasi ERP TransTV',
-    requesterName: 'Andi Firmansyah',
-    requesterDept: 'Taxation & Finance',
-    group: 'IT Software Development',
-    handledByName: 'Indah Astya Ningrum',
-    handledByInitials: 'IA',
-    handledByColor: 'bg-[#EDE9FE] text-[#6D28D9]',
-    solution: 'Index database telah diperbarui sehingga waktu ekspor berkurang dari 10 menit menjadi 30 detik.',
-    categoryDetail: 'ERP System (Reporting & Performance Tuning)',
-    handledOn: '25 Apr 2024, 17:00',
-    year: 2024,
-    month: 'April',
-  },
-  {
-    id: 'rep-10',
-    ticketSubject: 'Upgrade RAM Workstation Video Editing 4K',
-    ticketSubtitle: 'Hardware Workstation',
-    requesterName: 'Hendra Gunawan',
-    requesterDept: 'Broadcast Graphic',
-    group: 'IT Support',
-    handledByName: 'Genito Irhamsyah',
-    handledByInitials: 'GI',
-    handledByColor: 'bg-[#EDE9FE] text-[#6D28D9]',
-    solution: 'Pemasangan kit RAM 64GB DDR5 telah selesai dan lolos stress test hardware.',
-    categoryDetail: 'Hardware Upgrade (Workstation Unit)',
-    handledOn: '10 Mei 2024, 11:30',
-    year: 2024,
-    month: 'Mei',
-  },
-  {
-    id: 'rep-11',
-    ticketSubject: 'Penggantian Switch Hub Mezzanine Studio 2',
-    ticketSubtitle: 'Infrastruktur Jaringan',
-    requesterName: 'Ferry Ardiansyah',
-    requesterDept: 'Studio Engineering',
-    group: 'IT Support',
-    handledByName: 'Wahidin',
-    handledByInitials: 'W',
-    handledByColor: 'bg-[#F3E8FF] text-[#7E22CE]',
-    solution: 'Switch Gigabit 24-port baru telah terpasang di rack dan link trunking up 1Gbps.',
-    categoryDetail: 'Network Infrastructure (Switch Replacement)',
-    handledOn: '14 Jun 2024, 16:45',
-    year: 2024,
-    month: 'Juni',
-  },
-  {
-    id: 'rep-12',
-    ticketSubject: 'Modul Approval E-SPJ Digital Tahap 2',
-    ticketSubtitle: 'Aplikasi Insosys - Modul SPJ',
-    requesterName: 'Siti Rohimah',
-    requesterDept: 'General Affairs',
-    group: 'IT Software Development',
-    handledByName: 'Niel Hakim Pradana',
-    handledByInitials: 'NH',
-    handledByColor: 'bg-[#DBEAFE] text-[#1D4ED8]',
-    solution: 'Alur penandatanganan digital approval SPJ telah live di production server.',
-    categoryDetail: 'Insosys Application (Custom Workflow Feature)',
-    handledOn: '20 Jul 2024, 10:20',
-    year: 2024,
-    month: 'Juli',
-  },
-  // Generate filler data up to 48 items to reflect real enterprise statistics
-  ...Array.from({ length: 36 }).map((_, idx) => {
-    const num = idx + 13;
-    const isDev = num % 2 === 0;
-    const yearChoice = num % 3 === 0 ? 2026 : num % 3 === 1 ? 2025 : 2024;
-    return {
-      id: `rep-${num}`,
-      ticketSubject: isDev
-        ? `Sinkronisasi Data Rekap Insosys #${num}`
-        : `Maintenance Rutin PC Divisi Operasional #${num}`,
-      ticketSubtitle: isDev ? 'Aplikasi Insosys (Umum)' : 'Hardware CPU & Jaringan',
-      requesterName: isDev ? 'Karyawan Operasional' : 'Staff Administrasi',
-      requesterDept: isDev ? 'Production & Broadcast' : 'Finance & HR',
-      group: isDev ? 'IT Software Development' : 'IT Support',
-      handledByName: isDev ? 'Niel Hakim Pradana' : 'Genito Irhamsyah',
-      handledByInitials: isDev ? 'NH' : 'GI',
-      handledByColor: isDev ? 'bg-[#DBEAFE] text-[#1D4ED8]' : 'bg-[#EDE9FE] text-[#6D28D9]',
-      solution: 'Pekerjaan perbaikan telah selesai dilakukan dan sistem berjalan normal kembali.',
-      categoryDetail: isDev ? 'Sistem Insosys (Pemeliharaan)' : 'Dukungan Komputer & Jaringan',
-      handledOn: `${(num % 28) + 1} Agu ${yearChoice}, 14:${(num * 3) % 60}`,
-      year: yearChoice,
-      month: 'Agustus',
-    };
-  }),
 ];
 
+// 5 Group Resmi Database Sesuai tbl_group di HeidiSQL
 const GROUPS_LIST = [
   'All Group',
   'IT Software Development',
+  'IT Broadcast Multimedia',
   'IT Support',
-  'Network & Server',
-  'Broadcast & Studio',
-  'General Facility',
+  'IT TOS',
+  'HRIS',
 ];
 
-const YEARS_LIST = ['Years', '2026', '2025', '2024'];
+const YEARS_LIST = ['Years', '2026', '2025', '2024', '2023', '2022'];
 
 const MONTHS_LIST = [
   'Month',
@@ -285,14 +153,18 @@ const MONTHS_LIST = [
 
 export const ReportPage: React.FC<ReportPageProps> = ({
   currentUser = {
-    nik: '100000001',
-    name: 'Raden Azhar',
+    nik: '231270322',
+    name: 'Raden Azhar Fadhlur',
     department: 'Information Technology',
     role: 'admin',
   },
   onNavigate,
   onLogout,
 }) => {
+  // Live Report dataset from MySQL Database
+  const [reportData, setReportData] = useState<ReportItem[]>(INITIAL_REPORT_DATA);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   // Filters
   const [selectedGroup, setSelectedGroup] = useState<string>('All Group');
   const [selectedYear, setSelectedYear] = useState<string>('Years');
@@ -304,7 +176,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
 
-  // Expanded row ID (defaults to 'rep-1' to match the screenshot spec!)
+  // Expanded row ID
   const [expandedRowId, setExpandedRowId] = useState<string | null>('rep-1');
 
   // Pagination
@@ -314,14 +186,45 @@ export const ReportPage: React.FC<ReportPageProps> = ({
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Load report data from backend MySQL API
+  const fetchReportData = () => {
+    setIsLoading(true);
+    helpdeskApi
+      .getReports({
+        group: selectedGroup,
+        year: selectedYear,
+        month: selectedMonth,
+        search: searchQuery,
+        limit: 1000,
+      })
+      .then((res) => {
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setReportData(res.data);
+          if (res.data[0]) {
+            setExpandedRowId(res.data[0].id);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('API getReports error, fallback ke data lokal:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchReportData();
+  }, [selectedGroup, selectedYear, selectedMonth, searchQuery]);
+
   // Toggle row accordion dropdown
   const handleToggleRow = (id: string) => {
     setExpandedRowId((prev) => (prev === id ? null : id));
   };
 
-  // Filtered dataset
+  // Filtered dataset (Backend already filters, local fallback logic handles in-memory)
   const filteredData = useMemo(() => {
-    return INITIAL_REPORT_DATA.filter((item) => {
+    return reportData.filter((item) => {
       // Group filter
       if (selectedGroup !== 'All Group' && item.group !== selectedGroup) {
         return false;
@@ -356,7 +259,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
       }
       return true;
     });
-  }, [selectedGroup, selectedYear, selectedMonth, searchQuery]);
+  }, [reportData, selectedGroup, selectedYear, selectedMonth, searchQuery]);
 
   // Pagination slicing
   const totalItems = filteredData.length;
@@ -370,6 +273,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
   const handleExportToExcel = () => {
     const headers = [
       'No',
+      'No Tiket',
       'Ticket Subject',
       'Ticket Subcategory',
       'Requested By',
@@ -385,6 +289,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
 
     const rows = filteredData.map((item, idx) => [
       idx + 1,
+      `"${item.id}"`,
       `"${item.ticketSubject.replace(/"/g, '""')}"`,
       `"${item.ticketSubtitle.replace(/"/g, '""')}"`,
       `"${item.requesterName.replace(/"/g, '""')}"`,
@@ -416,7 +321,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
     document.body.removeChild(link);
 
     // Show friendly confirmation toast
-    setToastMessage(`Laporan berhasil diekspor (${filteredData.length} baris data)!`);
+    setToastMessage(`Laporan berhasil diekspor (${filteredData.length} baris data tiket database)!`);
     setTimeout(() => setToastMessage(null), 4000);
   };
 
@@ -443,7 +348,11 @@ export const ReportPage: React.FC<ReportPageProps> = ({
           {/* User Badge */}
           <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
             <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
-              {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+              {currentUser.name
+                .split(' ')
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join('')}
             </div>
             <span className="text-[13px] font-semibold text-[#1E293B]">
               {currentUser.name}
@@ -451,11 +360,26 @@ export const ReportPage: React.FC<ReportPageProps> = ({
           </div>
         </div>
 
-        {/* Page Title */}
-        <div className="flex-shrink-0">
-          <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
-            Report
-          </h1>
+        {/* Page Title & Refresh */}
+        <div className="flex items-center justify-between flex-shrink-0">
+          <div>
+            <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
+              Report
+            </h1>
+            <p className="text-[13px] text-slate-500 mt-0.5">
+              Laporan data tiket historis dan berjalan dari database Helpdesk TRANS TV.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={fetchReportData}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[12.5px] font-bold text-[#153F85] shadow-sm transition-all cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh Data
+          </button>
         </div>
 
         {/* Toast Alert Notification */}
@@ -484,7 +408,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
                 Filter By
               </span>
 
-              {/* Group Filter Dropdown Pill */}
+              {/* Group Filter Dropdown Pill (5 Database Groups) */}
               <div className="relative">
                 <button
                   type="button"
@@ -500,7 +424,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
                 </button>
 
                 {isGroupDropdownOpen && (
-                  <div className="absolute left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                     {GROUPS_LIST.map((grp) => (
                       <button
                         key={grp}
@@ -576,7 +500,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
                 </button>
 
                 {isMonthDropdownOpen && (
-                  <div className="absolute left-0 mt-1.5 w-44 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute left-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
                     {MONTHS_LIST.map((m) => (
                       <button
                         key={m}
@@ -597,47 +521,30 @@ export const ReportPage: React.FC<ReportPageProps> = ({
                   </div>
                 )}
               </div>
-
-              {/* Clear filters button if active */}
-              {(selectedGroup !== 'All Group' || selectedYear !== 'Years' || selectedMonth !== 'Month') && (
-                <button
-                  onClick={() => {
-                    setSelectedGroup('All Group');
-                    setSelectedYear('Years');
-                    setSelectedMonth('Month');
-                    setCurrentPage(1);
-                  }}
-                  className="text-[12px] text-blue-600 hover:text-blue-800 underline ml-1 cursor-pointer"
-                >
-                  Reset Filter
-                </button>
-              )}
             </div>
 
-            {/* Right Side: EXPORT TO EXCEL & Search Input */}
-            <div className="flex items-center gap-3">
-              {/* EXPORT TO EXCEL Button */}
+            {/* Right: Export to Excel Button & Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 type="button"
                 onClick={handleExportToExcel}
-                className="flex items-center gap-2 bg-[#0C3E7E] hover:bg-[#153F85] text-white px-4 py-2 rounded-lg text-[12px] font-bold tracking-wider transition-all duration-200 shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
+                className="flex items-center justify-center gap-2 bg-[#0C3E7E] hover:bg-[#092e5e] text-white px-5 py-2.5 rounded-full text-[13px] font-bold shadow-sm transition-all cursor-pointer select-none active:scale-95"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>EXPORT TO EXCEL</span>
               </button>
 
-              {/* Search Bar */}
-              <div className="relative w-52 md:w-64">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
+                  placeholder="Cari tiket di database..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  placeholder="Search"
-                  className="w-full pl-9 pr-3 py-1.5 text-[13px] bg-white border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0C3E7E] focus:ring-1 focus:ring-[#0C3E7E] transition-all"
+                  className="w-full sm:w-[220px] pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-full text-[13px] placeholder:text-slate-400 focus:outline-none focus:border-[#0C3E7E] focus:ring-1 focus:ring-[#0C3E7E] transition-all"
                 />
               </div>
             </div>
@@ -645,8 +552,8 @@ export const ReportPage: React.FC<ReportPageProps> = ({
 
           {/* ================= TABLE LIST ================= */}
           <div className="w-full overflow-x-auto">
-            <div className="min-w-[860px]">
-              {/* Header Row */}
+            <div className="min-w-[800px]">
+              {/* Table Column Headers */}
               <div className="grid grid-cols-12 gap-4 pb-3 border-b border-slate-200/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none px-3">
                 <div className="col-span-4">TICKET</div>
                 <div className="col-span-3">REQUESTED BY</div>
@@ -658,7 +565,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
               <div className="divide-y divide-slate-100">
                 {currentItems.length === 0 ? (
                   <div className="py-12 text-center text-slate-400 text-[14px]">
-                    Tidak ada data report yang sesuai dengan filter atau pencarian.
+                    {isLoading ? 'Sedang memuat data dari database...' : 'Tidak ada data report yang sesuai dengan filter atau pencarian.'}
                   </div>
                 ) : (
                   currentItems.map((item) => {
@@ -736,14 +643,14 @@ export const ReportPage: React.FC<ReportPageProps> = ({
 
                         {/* ================= DROPDOWN DETAIL ACCORDION ================= */}
                         {isExpanded && (
-                          <div className="mt-4 p-5 bg-[#F8FAFC] border border-slate-200/80 rounded-2xl animate-in fade-in slide-in-from-top-1 duration-200">
+                          <div className="mt-4 p-5 bg-[#F8FAFC] border border-slate-200/80 rounded-2xl animate-in fade-in slide-from-top-1 duration-200">
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                              {/* Left Side: SOLUTION */}
+                              {/* Left Side: SOLUTION / PROBLEM */}
                               <div className="md:col-span-7 pr-4">
                                 <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">
-                                  SOLUTION
+                                  SOLUTION / DETAIL PERMASALAHAN
                                 </span>
-                                <p className="text-[13.5px] leading-[22px] font-medium text-slate-800">
+                                <p className="text-[13.5px] leading-[22px] font-medium text-slate-800 whitespace-pre-line">
                                   {item.solution}
                                 </p>
                               </div>

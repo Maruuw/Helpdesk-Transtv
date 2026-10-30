@@ -72,9 +72,9 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
   onUpdateTicket,
 }) => {
   const isSolved = ticket.status === 'Solved';
-  const isInProgress = ticket.status === 'In progress';
+  const isInProgress = ticket.status === 'In progress' || ticket.status === 'On Process';
   const isReturn = ticket.status === 'Return';
-  const isReject = ticket.status === 'Reject';
+  const isReject = ticket.status === 'Reject' || ticket.status === 'Rejected';
   const isClosed = isSolved || isReject;
 
   // Extract clean ID number

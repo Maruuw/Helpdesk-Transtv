@@ -15,7 +15,7 @@ export interface TicketRequestItem {
   category: string;
   subcategory: string;
   submitted: string;
-  status: 'Solved' | 'In progress' | 'Waiting' | 'Return' | 'Pending' | 'Open' | 'Reject';
+  status: 'Solved' | 'In progress' | 'Waiting' | 'Return' | 'Pending' | 'Open' | 'Reject' | 'Rejected' | 'On Process';
   handler?: string;
   requester?: string;
   nik?: string;

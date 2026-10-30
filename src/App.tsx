@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LoginPage } from './pages/LoginPage';
 import type { AuthUser } from './pages/LoginPage';
 import { DashboardPage, initialLatestRequests } from './pages/DashboardPage';
@@ -8,6 +8,7 @@ import { MyTicketsPage } from './pages/MyTicketsPage';
 import { TicketDetailPage } from './pages/TicketDetailPage';
 import { MasterCategoryPage } from './pages/MasterCategoryPage';
 import { ReportPage } from './pages/ReportPage';
+import { helpdeskApi } from './services/api';
 
 export type AppView = 'login' | 'dashboard' | 'create-ticket' | 'my-tickets' | 'ticket-detail' | 'master-category' | 'report';
 
@@ -37,6 +38,25 @@ function App() {
   const [tickets, setTickets] = useState<TicketRequestItem[]>(initialLatestRequests);
   const [selectedTicket, setSelectedTicket] = useState<TicketRequestItem | null>(null);
 
+  // Ambil tiket live dari backend Laravel (MySQL db_helpdesk)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveTickets = async () => {
+      try {
+        const res = await helpdeskApi.getTickets({ limit: 100 });
+        if (isMounted && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          setTickets(res.data);
+        }
+      } catch (err) {
+        console.warn('Backend API belum terhubung, menggunakan data fallback lokal:', err);
+      }
+    };
+    fetchLiveTickets();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser]);
+
   const handleLoginSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     setCurrentView('dashboard');
@@ -57,12 +77,28 @@ function App() {
     setCurrentView(view);
   };
 
-  const handleTicketCreated = (newTicket: {
+  const handleTicketCreated = async (newTicket: {
     subject: string;
     group: string;
     category: string;
     description: string;
+    groupId?: number;
+    categoryId?: number;
+    dataform?: any;
   }) => {
+    // 1. Refresh tiket terbaru dari Backend Laravel
+    try {
+      const res = await helpdeskApi.getTickets({ limit: 100 });
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setTickets(res.data);
+        setCurrentView('dashboard');
+        return;
+      }
+    } catch (e) {
+      console.warn('API getTickets error setelah createTicket, fallback lokal:', e);
+    }
+
+    // 2. Fallback lokal jika backend tidak terjangkau
     const now = new Date();
     const dateFormatted = `${now.getDate()} ${now.toLocaleString('id-ID', { month: 'short' })} ${now.getFullYear()}, ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     
@@ -76,9 +112,9 @@ function App() {
       submitted: dateFormatted,
       status: 'Open',
       handler: 'Awaiting IT Assignment',
-      requester: currentUser?.name || 'Damar Pratama',
+      requester: currentUser?.name || 'Raden Azhar Fadhlur',
       nik: currentUser?.nik || '231270322',
-      department: currentUser?.department || 'Software Development',
+      department: currentUser?.department || 'Information Technology',
     };
 
     setTickets((prev) => [
@@ -93,13 +129,30 @@ function App() {
     setCurrentView('ticket-detail');
   };
 
-  const handleUpdateTicket = (
+  const handleUpdateTicket = async (
     ticketId: string,
     newStatus: 'Solved' | 'In progress' | 'Return' | 'Reject',
     responseMessage: string,
     handlerName?: string,
     responderRole?: 'IT Support' | 'User'
   ) => {
+    // 1. Simpan respon ke Backend Laravel
+    try {
+      await helpdeskApi.addResponse(ticketId, {
+        message: responseMessage,
+        author_nik: currentUser?.nik || '231270322',
+        status: newStatus,
+        handler_nik: currentUser?.role === 'admin' ? currentUser.nik : undefined,
+      });
+      const res = await helpdeskApi.getTickets({ limit: 100 });
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setTickets(res.data);
+      }
+    } catch (e) {
+      console.warn('API addResponse error, fallback lokal:', e);
+    }
+
+    // 2. Fallback state lokal
     const now = new Date();
     const dateFormatted = `${now.getDate()} ${now.toLocaleString('id-ID', { month: 'short' })} ${now.getFullYear()}, ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     

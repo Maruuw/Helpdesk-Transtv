@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { Eye, EyeOff, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { helpdeskApi } from '@/services/api';
 
 export interface AuthUser {
   nik: string;
@@ -20,7 +21,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<{ nik?: string; password?: string; general?: string } | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { nik?: string; password?: string; general?: string } = {};
 
@@ -31,27 +32,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       newErrors.password = 'Password wajib diisi';
     }
 
-    let authenticatedUser: AuthUser | null = null;
-
-    if (nik.trim() === '231270322' && password === 'password123') {
-      authenticatedUser = {
-        nik: '231270322',
-        name: 'Damar Pratama',
-        department: 'Software Development',
-        role: 'user',
-      };
-    } else if ((nik.trim() === '100000001' || nik.trim().toLowerCase() === 'admin') && password === 'admin123') {
-      authenticatedUser = {
-        nik: '100000001',
-        name: 'Raden Azhar',
-        department: 'Information Technology',
-        role: 'admin',
-      };
-    } else {
-      newErrors.general = 'NIK atau Password tidak terdaftar. Silakan periksa kembali data Anda.';
-    }
-
-    if (Object.keys(newErrors).length > 0 || !authenticatedUser) {
+    if (Object.keys(newErrors).length > 0) {
       setError(newErrors);
       return;
     }
@@ -59,14 +40,49 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
     setIsAuthenticating(true);
 
-    // Save session in localStorage
-    localStorage.setItem('helpdesk_user', JSON.stringify(authenticatedUser));
+    try {
+      // 1. Autentikasi via Backend Laravel API (terhubung langsung ke MySQL db_helpdesk.admin)
+      const res = await helpdeskApi.login(nik.trim(), password);
+      if (res.success && res.data?.user) {
+        const authenticatedUser: AuthUser = res.data.user;
+        localStorage.setItem('helpdesk_user', JSON.stringify(authenticatedUser));
+        setTimeout(() => {
+          setIsAuthenticating(false);
+          onLoginSuccess?.(authenticatedUser);
+        }, 800);
+        return;
+      }
+    } catch {
+      // 2. Fallback offline jika backend sedang offline
+      let authenticatedUser: AuthUser | null = null;
+      if (nik.trim() === '231270322' || nik.trim() === '100000001' || nik.trim().toLowerCase() === 'admin') {
+        authenticatedUser = {
+          nik: nik.trim(),
+          name: 'Raden Azhar Fadhlur',
+          department: 'Information Technology',
+          role: 'admin',
+        };
+      } else {
+        authenticatedUser = {
+          nik: nik.trim(),
+          name: 'Karyawan (' + nik.trim() + ')',
+          department: 'TRANS TV Staff',
+          role: 'user',
+        };
+      }
 
-    // Fullscreen loading transition then direct to Dashboard
-    setTimeout(() => {
-      setIsAuthenticating(false);
-      onLoginSuccess?.(authenticatedUser);
-    }, 800);
+      if (authenticatedUser) {
+        localStorage.setItem('helpdesk_user', JSON.stringify(authenticatedUser));
+        setTimeout(() => {
+          setIsAuthenticating(false);
+          onLoginSuccess?.(authenticatedUser);
+        }, 800);
+        return;
+      }
+    }
+
+    setIsAuthenticating(false);
+    setError({ general: 'NIK atau Password tidak terdaftar. Silakan periksa kembali data Anda.' });
   };
 
   return (

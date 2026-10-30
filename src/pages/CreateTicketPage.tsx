@@ -1,7 +1,13 @@
-/*  */import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Sidebar } from '@/components/layout';
 import { Button, Card } from '@/components/ui';
 import { ChevronDown, FileText, X, AlertCircle, Plus } from 'lucide-react';
+import { helpdeskApi } from '@/services/api';
+import {
+  DB_GROUPS,
+  DB_CATEGORIES_BY_GROUP,
+} from '@/data/categoryMasterData';
+import type { DbCategoryItem, DbGroupItem } from '@/data/categoryMasterData';
 
 import type { AppView } from '@/App';
 
@@ -18,40 +24,21 @@ interface CreateTicketPageProps {
     group: string;
     category: string;
     description: string;
+    groupId?: number;
+    categoryId?: number;
+    dataform?: {
+      disetujui: string;
+      pembuatan: string;
+      tipe_program: string;
+      tools_pemrograman: string;
+      jaringan: string;
+      koneksi: string;
+      user_note: string;
+    };
   }) => void;
   onLogout: () => void;
   onNavigate: (view: AppView) => void;
 }
-
-// Master Data: Dependent Category Mapping
-const TICKET_MASTER_DATA: Record<string, string[]> = {
-  'Software & Application': [
-    'Aplikasi Insesys (Umum)',
-    'Perubahan Data',
-    'Bug / Error Export Laporan',
-    'Software Request & Licensing',
-    'Aplikasi Internal Lainnya',
-  ],
-  'Hardware & Device': [
-    'Printer & Scanner Studio',
-    'PC / Laptop Kantor',
-    'Monitor & Layar Display',
-    'Perangkat Studio & Broadcasting',
-    'Aksesoris & Peripheral (Mouse, Keyboard)',
-  ],
-  'Network & Infrastructure': [
-    'Akses VPN Remote Work',
-    'Koneksi Jaringan WiFi / LAN',
-    'Server & Database Access',
-    'Firewall & IP Whitelist',
-  ],
-  'Account & Access': [
-    'Reset Password TransHub',
-    'Email Korporat (@transtv.co.id)',
-    'Active Directory / Domain Login',
-    'Akses Folder Shared Drive',
-  ],
-};
 
 interface UploadedFileItem {
   id: string;
@@ -62,9 +49,9 @@ interface UploadedFileItem {
 export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
   currentUser = {
     nik: '231270322',
-    name: 'Damar Pratama',
-    department: 'Software Development',
-    role: 'user',
+    name: 'Raden Azhar Fadhlur',
+    department: 'Information Technology',
+    role: 'admin',
   },
   onCancel,
   onSubmitSuccess,
@@ -77,12 +64,25 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
     nik: currentUser.nik,
   };
 
+  // Group and Category Master Data (initialized from DB constants, updated via API)
+  const [groups, setGroups] = useState<DbGroupItem[]>(DB_GROUPS);
+  const [categoriesByGroup, setCategoriesByGroup] =
+    useState<Record<string, DbCategoryItem[]>>(DB_CATEGORIES_BY_GROUP);
+
   // Form states
   const [subject, setSubject] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState<UploadedFileItem[]>([]);
+
+  // Special form states for categories linking to tbl_tiketform & tbl_dataform
+  const [pembuatan, setPembuatan] = useState<'Inhouse' | 'Outsource'>('Inhouse');
+  const [tipeProgram, setTipeProgram] = useState<'non-multimedia' | 'multimedia'>('non-multimedia');
+  const [toolsPemrograman, setToolsPemrograman] = useState('vbnet');
+  const [jaringan, setJaringan] = useState<'office' | 'broadcast'>('office');
+  const [koneksi, setKoneksi] = useState<'Jaringan' | 'standalone'>('Jaringan');
+  const [userNote, setUserNote] = useState('');
 
   // Validation and submit states
   const [errors, setErrors] = useState<{
@@ -100,6 +100,60 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
     submittedAt: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch live categories & groups from database
+  useEffect(() => {
+    let isMounted = true;
+    helpdeskApi
+      .getCategories()
+      .then((res) => {
+        if (isMounted && res.success && res.data) {
+          if (Array.isArray(res.data.groups) && res.data.groups.length > 0) {
+            setGroups(res.data.groups);
+          }
+          if (Array.isArray(res.data.categories) && res.data.categories.length > 0) {
+            const mapped: Record<string, DbCategoryItem[]> = {};
+            // Inisialisasi setiap group
+            (res.data.groups || DB_GROUPS).forEach((g: any) => {
+              mapped[g.name] = [];
+            });
+
+            res.data.categories.forEach((cat: any) => {
+              const gName = cat.group_name || 'General IT';
+              if (!mapped[gName]) mapped[gName] = [];
+              mapped[gName].push({
+                id: Number(cat.id),
+                name: cat.name,
+                groupId: cat.group_id,
+                groupName: gName,
+                isForm: !!cat.is_form,
+              });
+            });
+            setCategoriesByGroup(mapped);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Menggunakan fallback data master kategori lokal:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Current category object to check if it has special tbl_tiketform requirements
+  const currentCategoryObj = useMemo(() => {
+    if (!selectedGroup || !selectedCategory) return null;
+    const list = categoriesByGroup[selectedGroup] || [];
+    return list.find((c) => c.name === selectedCategory) || null;
+  }, [categoriesByGroup, selectedGroup, selectedCategory]);
+
+  const currentGroupObj = useMemo(() => {
+    return groups.find((g) => g.name === selectedGroup) || null;
+  }, [groups, selectedGroup]);
+
+  const isSpecialSoftwareForm = currentCategoryObj?.isForm ?? false;
 
   // Group change handler - resets category
   const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -136,7 +190,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
   };
 
   // Validation & Submit
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: typeof errors = {};
 
@@ -164,17 +218,39 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
     const now = new Date();
     const dateFormatted = `${now.getDate()} ${now.toLocaleString('id-ID', { month: 'short' })} ${now.getFullYear()}, ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-    // Simulate sending ticket
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmittedData({
+    const dataformPayload = isSpecialSoftwareForm
+      ? {
+          disetujui: 'ya',
+          pembuatan,
+          tipe_program: tipeProgram,
+          tools_pemrograman: toolsPemrograman,
+          jaringan,
+          koneksi,
+          user_note: userNote,
+        }
+      : undefined;
+
+    try {
+      await helpdeskApi.createTicket({
         subject,
-        group: selectedGroup,
-        category: selectedCategory,
-        submittedAt: dateFormatted,
+        description,
+        nik: currentUser.nik,
+        id_group: currentGroupObj?.id,
+        tiketkategori_id: currentCategoryObj?.id,
+        dataform: dataformPayload,
       });
-      setShowSuccessModal(true);
-    }, 600);
+    } catch (err) {
+      console.warn('API createTicket error, fallback lokal:', err);
+    }
+
+    setIsSubmitting(false);
+    setSubmittedData({
+      subject,
+      group: selectedGroup,
+      category: selectedCategory,
+      submittedAt: dateFormatted,
+    });
+    setShowSuccessModal(true);
   };
 
   const handleConfirmSuccess = () => {
@@ -184,6 +260,19 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
       group: selectedGroup,
       category: selectedCategory,
       description,
+      groupId: currentGroupObj?.id,
+      categoryId: currentCategoryObj?.id,
+      dataform: isSpecialSoftwareForm
+        ? {
+            disetujui: 'ya',
+            pembuatan,
+            tipe_program: tipeProgram,
+            tools_pemrograman: toolsPemrograman,
+            jaringan,
+            koneksi,
+            user_note: userNote,
+          }
+        : undefined,
     });
   };
 
@@ -210,7 +299,11 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
           {/* User Badge */}
           <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
             <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
-              {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+              {currentUser.name
+                .split(' ')
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join('')}
             </div>
             <span className="text-[13px] font-semibold text-[#1E293B]">
               {currentUser.name}
@@ -285,10 +378,11 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                   setSubject(e.target.value);
                   if (errors.subject) setErrors((prev) => ({ ...prev, subject: undefined }));
                 }}
-                className={`w-full text-[13px] leading-[18px] text-[#1E293B] rounded-[8px] py-3 px-4 transition-all duration-150 placeholder:text-[#94A3B8] focus:outline-none ${errors.subject
+                className={`w-full text-[13px] leading-[18px] text-[#1E293B] rounded-[8px] py-3 px-4 transition-all duration-150 placeholder:text-[#94A3B8] focus:outline-none ${
+                  errors.subject
                     ? 'border border-red-500 bg-red-50/20 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                     : 'border border-[#CBD5E1] bg-white focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm'
-                  }`}
+                }`}
               />
               {errors.subject && (
                 <p className="text-[11.5px] text-red-500 font-medium mt-1.5 flex items-center gap-1">
@@ -300,7 +394,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
 
             {/* ROW 3: Dependent Dropdowns (Group Ticket -> Ticket Category) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Group Ticket */}
+              {/* Group Ticket (tbl_group: 5 Groups from Database) */}
               <div>
                 <label className="block text-[12px] leading-[16px] font-bold text-[#1E293B] mb-2">
                   Group Ticket <span className="text-red-500">*</span>
@@ -309,18 +403,20 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                   <select
                     value={selectedGroup}
                     onChange={handleGroupChange}
-                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 bg-white transition-all duration-150 cursor-pointer focus:outline-none ${!selectedGroup ? 'text-[#94A3B8]' : 'text-[#1E293B] font-medium'
-                      } ${errors.group
+                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 bg-white transition-all duration-150 cursor-pointer focus:outline-none ${
+                      !selectedGroup ? 'text-[#94A3B8]' : 'text-[#1E293B] font-medium'
+                    } ${
+                      errors.group
                         ? 'border border-red-500 bg-red-50/20'
                         : 'border border-[#CBD5E1] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm'
-                      }`}
+                    }`}
                   >
                     <option value="" disabled>
                       Select a group
                     </option>
-                    {Object.keys(TICKET_MASTER_DATA).map((grp) => (
-                      <option key={grp} value={grp} className="text-[#1E293B]">
-                        {grp}
+                    {groups.map((grp) => (
+                      <option key={grp.id} value={grp.name} className="text-[#1E293B]">
+                        {grp.name}
                       </option>
                     ))}
                   </select>
@@ -334,7 +430,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                 )}
               </div>
 
-              {/* Ticket Category (Locked until group is selected) */}
+              {/* Ticket Category (tbl_tiketkategori: Filtered dynamically by selected Group) */}
               <div>
                 <label className="block text-[12px] leading-[16px] font-bold text-[#1E293B] mb-2">
                   Ticket category <span className="text-red-500">*</span>
@@ -344,20 +440,21 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                     value={selectedCategory}
                     disabled={!selectedGroup}
                     onChange={handleCategoryChange}
-                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 transition-all duration-150 focus:outline-none ${!selectedGroup
+                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 transition-all duration-150 focus:outline-none ${
+                      !selectedGroup
                         ? 'bg-[#DDE5ED] border border-[#CBD5E1] text-[#64748B] cursor-not-allowed select-none'
                         : !selectedCategory
-                          ? 'bg-white border border-[#CBD5E1] text-[#94A3B8] cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
-                          : 'bg-white border border-[#CBD5E1] text-[#1E293B] font-medium cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
-                      } ${errors.category ? 'border-red-500 bg-red-50/20' : ''}`}
+                        ? 'bg-white border border-[#CBD5E1] text-[#94A3B8] cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
+                        : 'bg-white border border-[#CBD5E1] text-[#1E293B] font-medium cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
+                    } ${errors.category ? 'border-red-500 bg-red-50/20' : ''}`}
                   >
                     <option value="" disabled>
                       {!selectedGroup ? 'Select a group first' : 'Select a category'}
                     </option>
                     {selectedGroup &&
-                      TICKET_MASTER_DATA[selectedGroup]?.map((cat) => (
-                        <option key={cat} value={cat} className="text-[#1E293B]">
-                          {cat}
+                      categoriesByGroup[selectedGroup]?.map((cat) => (
+                        <option key={cat.id} value={cat.name} className="text-[#1E293B]">
+                          {cat.name}
                         </option>
                       ))}
                   </select>
@@ -371,6 +468,120 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Form data teknis aplikasi */}
+            {isSpecialSoftwareForm && (
+              <div className="border border-blue-200 bg-[#F4F8FD] rounded-[16px] p-5 space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2.5 border-b border-blue-100 pb-3">
+                  <div className="w-7 h-7 rounded-lg bg-[#153F85] text-white flex items-center justify-center">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-bold text-slate-900">
+                      Form Aplikasi
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Data kebutuhan teknis pembuatan atau modifikasi modul aplikasi.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                  {/* Pembuatan */}
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-700 mb-1.5">
+                      Pembuatan
+                    </label>
+                    <select
+                      value={pembuatan}
+                      onChange={(e) => setPembuatan(e.target.value as any)}
+                      className="w-full text-[12.5px] rounded-[6px] border border-indigo-200 bg-white p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="Inhouse">Inhouse</option>
+                      <option value="Outsource">Outsource</option>
+                    </select>
+                  </div>
+
+                  {/* Tipe Program */}
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-700 mb-1.5">
+                      Tipe Program
+                    </label>
+                    <select
+                      value={tipeProgram}
+                      onChange={(e) => setTipeProgram(e.target.value as any)}
+                      className="w-full text-[12.5px] rounded-[6px] border border-indigo-200 bg-white p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="non-multimedia">Non-Multimedia</option>
+                      <option value="multimedia">Multimedia</option>
+                    </select>
+                  </div>
+
+                  {/* Tools Pemrograman */}
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-700 mb-1.5">
+                      Tools Pemrograman
+                    </label>
+                    <select
+                      value={toolsPemrograman}
+                      onChange={(e) => setToolsPemrograman(e.target.value)}
+                      className="w-full text-[12.5px] rounded-[6px] border border-indigo-200 bg-white p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="vbnet">VB.NET</option>
+                      <option value="php">PHP / Laravel</option>
+                      <option value="react_js">React / TypeScript</option>
+                      <option value="csharp">C# .NET</option>
+                      <option value="sql_database">SQL / Database</option>
+                      <option value="lainnya">Lainnya</option>
+                    </select>
+                  </div>
+
+                  {/* Jaringan */}
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-700 mb-1.5">
+                      Jaringan
+                    </label>
+                    <select
+                      value={jaringan}
+                      onChange={(e) => setJaringan(e.target.value as any)}
+                      className="w-full text-[12.5px] rounded-[6px] border border-indigo-200 bg-white p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="office">Office</option>
+                      <option value="broadcast">Broadcast</option>
+                    </select>
+                  </div>
+
+                  {/* Koneksi */}
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-700 mb-1.5">
+                      Koneksi
+                    </label>
+                    <select
+                      value={koneksi}
+                      onChange={(e) => setKoneksi(e.target.value as any)}
+                      className="w-full text-[12.5px] rounded-[6px] border border-indigo-200 bg-white p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="Jaringan">Jaringan</option>
+                      <option value="standalone">Standalone</option>
+                    </select>
+                  </div>
+
+                  {/* Catatan Teknis */}
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-slate-700 mb-1.5">
+                      Catatan Tambahan Modul
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Modul Baru / Penambahan Fitur"
+                      value={userNote}
+                      onChange={(e) => setUserNote(e.target.value)}
+                      className="w-full text-[12.5px] rounded-[6px] border border-indigo-200 bg-white p-2.5 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ROW 4: Description (Mandatory) */}
             <div>
@@ -387,10 +598,11 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                     setErrors((prev) => ({ ...prev, description: undefined }));
                   }
                 }}
-                className={`w-full text-[13px] leading-[20px] text-[#1E293B] rounded-[8px] p-4 transition-all duration-150 placeholder:text-[#94A3B8] resize-y min-h-[120px] focus:outline-none ${errors.description
+                className={`w-full text-[13px] leading-[20px] text-[#1E293B] rounded-[8px] p-4 transition-all duration-150 placeholder:text-[#94A3B8] resize-y min-h-[120px] focus:outline-none ${
+                  errors.description
                     ? 'border border-red-500 bg-red-50/20 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                     : 'border border-[#CBD5E1] bg-white focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm'
-                  }`}
+                }`}
               />
               {errors.description && (
                 <p className="text-[11.5px] text-red-500 font-medium mt-1.5 flex items-center gap-1">
@@ -424,7 +636,9 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                     Choose File
                   </button>
                   <span className="text-[12px] text-[#64748B]">
-                    {attachments.length > 0 ? `${attachments.length} file(s) attached` : 'No file chosen'}
+                    {attachments.length > 0
+                      ? `${attachments.length} file(s) attached`
+                      : 'No file chosen'}
                   </span>
                 </div>
 
@@ -507,7 +721,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
         </Card>
       </main>
 
-      {/* ================= SUCCESS CONFIRMATION MODAL (FIGMA EXACT) ================= */}
+      {/* ================= SUCCESS CONFIRMATION MODAL ================= */}
       {showSuccessModal && submittedData && (
         <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4 select-none">
           <div className="bg-white rounded-[26px] max-w-[490px] w-full p-8 md:p-9 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-150">

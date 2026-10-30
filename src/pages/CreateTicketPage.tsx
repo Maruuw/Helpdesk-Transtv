@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+/*  */import React, { useState, useRef } from 'react';
 import { Sidebar } from '@/components/layout';
 import { Button, Card } from '@/components/ui';
 import { ChevronDown, FileText, X, AlertCircle, Plus } from 'lucide-react';
@@ -6,6 +6,12 @@ import { ChevronDown, FileText, X, AlertCircle, Plus } from 'lucide-react';
 import type { AppView } from '@/App';
 
 interface CreateTicketPageProps {
+  currentUser?: {
+    nik: string;
+    name: string;
+    department: string;
+    role: 'user' | 'admin';
+  };
   onCancel: () => void;
   onSubmitSuccess: (newTicket: {
     subject: string;
@@ -54,6 +60,12 @@ interface UploadedFileItem {
 }
 
 export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
+  currentUser = {
+    nik: '231270322',
+    name: 'Damar Pratama',
+    department: 'Software Development',
+    role: 'user',
+  },
   onCancel,
   onSubmitSuccess,
   onLogout,
@@ -61,8 +73,8 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
 }) => {
   // Read-only user from Employee Master Data
   const defaultUser = {
-    name: 'Raden Azhar Fadhlur Rohman',
-    nik: '231270322',
+    name: currentUser.name,
+    nik: currentUser.nik,
   };
 
   // Form states
@@ -180,6 +192,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
       {/* ================= LEFT SIDEBAR ================= */}
       <Sidebar
         activeItem="create-ticket"
+        userRole={currentUser.role}
         onLogout={onLogout}
         onNavigate={onNavigate}
       />
@@ -194,13 +207,13 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
             className="h-[42px] md:h-[48px] w-auto object-contain select-none"
           />
 
-          {/* User Badge (Figma DP Damar Pratama) */}
+          {/* User Badge */}
           <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center">
-              DP
+            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
+              {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
             <span className="text-[13px] font-semibold text-[#1E293B]">
-              Damar Pratama
+              {currentUser.name}
             </span>
           </div>
         </div>
@@ -272,11 +285,10 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                   setSubject(e.target.value);
                   if (errors.subject) setErrors((prev) => ({ ...prev, subject: undefined }));
                 }}
-                className={`w-full text-[13px] leading-[18px] text-[#1E293B] rounded-[8px] py-3 px-4 transition-all duration-150 placeholder:text-[#94A3B8] focus:outline-none ${
-                  errors.subject
+                className={`w-full text-[13px] leading-[18px] text-[#1E293B] rounded-[8px] py-3 px-4 transition-all duration-150 placeholder:text-[#94A3B8] focus:outline-none ${errors.subject
                     ? 'border border-red-500 bg-red-50/20 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                     : 'border border-[#CBD5E1] bg-white focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm'
-                }`}
+                  }`}
               />
               {errors.subject && (
                 <p className="text-[11.5px] text-red-500 font-medium mt-1.5 flex items-center gap-1">
@@ -297,13 +309,11 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                   <select
                     value={selectedGroup}
                     onChange={handleGroupChange}
-                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 bg-white transition-all duration-150 cursor-pointer focus:outline-none ${
-                      !selectedGroup ? 'text-[#94A3B8]' : 'text-[#1E293B] font-medium'
-                    } ${
-                      errors.group
+                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 bg-white transition-all duration-150 cursor-pointer focus:outline-none ${!selectedGroup ? 'text-[#94A3B8]' : 'text-[#1E293B] font-medium'
+                      } ${errors.group
                         ? 'border border-red-500 bg-red-50/20'
                         : 'border border-[#CBD5E1] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm'
-                    }`}
+                      }`}
                   >
                     <option value="" disabled>
                       Select a group
@@ -334,13 +344,12 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                     value={selectedCategory}
                     disabled={!selectedGroup}
                     onChange={handleCategoryChange}
-                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 transition-all duration-150 focus:outline-none ${
-                      !selectedGroup
+                    className={`w-full appearance-none text-[13px] leading-[18px] rounded-[8px] py-3 pl-4 pr-10 transition-all duration-150 focus:outline-none ${!selectedGroup
                         ? 'bg-[#DDE5ED] border border-[#CBD5E1] text-[#64748B] cursor-not-allowed select-none'
                         : !selectedCategory
-                        ? 'bg-white border border-[#CBD5E1] text-[#94A3B8] cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
-                        : 'bg-white border border-[#CBD5E1] text-[#1E293B] font-medium cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
-                    } ${errors.category ? 'border-red-500 bg-red-50/20' : ''}`}
+                          ? 'bg-white border border-[#CBD5E1] text-[#94A3B8] cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
+                          : 'bg-white border border-[#CBD5E1] text-[#1E293B] font-medium cursor-pointer focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]'
+                      } ${errors.category ? 'border-red-500 bg-red-50/20' : ''}`}
                   >
                     <option value="" disabled>
                       {!selectedGroup ? 'Select a group first' : 'Select a category'}
@@ -378,11 +387,10 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                     setErrors((prev) => ({ ...prev, description: undefined }));
                   }
                 }}
-                className={`w-full text-[13px] leading-[20px] text-[#1E293B] rounded-[8px] p-4 transition-all duration-150 placeholder:text-[#94A3B8] resize-y min-h-[120px] focus:outline-none ${
-                  errors.description
+                className={`w-full text-[13px] leading-[20px] text-[#1E293B] rounded-[8px] p-4 transition-all duration-150 placeholder:text-[#94A3B8] resize-y min-h-[120px] focus:outline-none ${errors.description
                     ? 'border border-red-500 bg-red-50/20 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                     : 'border border-[#CBD5E1] bg-white focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm'
-                }`}
+                  }`}
               />
               {errors.description && (
                 <p className="text-[11.5px] text-red-500 font-medium mt-1.5 flex items-center gap-1">

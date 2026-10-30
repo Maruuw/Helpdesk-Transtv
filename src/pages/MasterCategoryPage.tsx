@@ -23,6 +23,12 @@ export interface CategoryItem {
 import type { AppView } from '@/App';
 
 interface MasterCategoryPageProps {
+  currentUser?: {
+    nik: string;
+    name: string;
+    department: string;
+    role: 'user' | 'admin';
+  };
   onNavigate: (view: AppView) => void;
   onLogout: () => void;
 }
@@ -84,6 +90,12 @@ const GROUP_OPTIONS = [
 ];
 
 export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
+  currentUser = {
+    nik: '100000001',
+    name: 'Raden Azhar',
+    department: 'Information Technology',
+    role: 'admin',
+  },
   onNavigate,
   onLogout,
 }) => {
@@ -211,6 +223,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
       {/* ================= LEFT SIDEBAR ================= */}
       <Sidebar
         activeItem="master-category"
+        userRole={currentUser.role}
         onLogout={onLogout}
         onNavigate={onNavigate}
       />
@@ -228,11 +241,11 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
 
           {/* Right: User Profile Pill */}
           <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[32px] h-[32px] rounded-full bg-[#E0E7FF] text-[#1E3A8A] font-bold text-[12px] flex items-center justify-center">
-              DP
+            <div className="w-[32px] h-[32px] rounded-full bg-[#E0E7FF] text-[#1E3A8A] font-bold text-[12px] flex items-center justify-center uppercase">
+              {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
             <span className="text-[13px] font-semibold text-[#1E293B]">
-              Damar Pratama
+              {currentUser.name}
             </span>
           </div>
         </div>

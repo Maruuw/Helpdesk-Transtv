@@ -7,6 +7,12 @@ import { Plus, Search, AlertCircle } from 'lucide-react';
 import type { AppView } from '@/App';
 
 interface MyTicketsPageProps {
+  currentUser?: {
+    nik: string;
+    name: string;
+    department: string;
+    role: 'user' | 'admin';
+  };
   tickets: TicketRequestItem[];
   onNavigate: (view: AppView) => void;
   onLogout: () => void;
@@ -17,6 +23,12 @@ interface MyTicketsPageProps {
 type StatusFilter = 'All' | 'Return' | 'In progress' | 'Solved' | 'Reject';
 
 export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
+  currentUser = {
+    nik: '231270322',
+    name: 'Damar Pratama',
+    department: 'Software Development',
+    role: 'user',
+  },
   tickets,
   onNavigate,
   onLogout,
@@ -26,16 +38,21 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Jika User biasa, ambil tiket miliknya. Jika Admin, ambil semua tiket.
+  const displayTickets = currentUser.role === 'user'
+    ? tickets.filter((t) => t.nik === currentUser.nik || t.requester === currentUser.name)
+    : tickets;
+
   // Counts for tabs
-  const allCount = tickets.length;
-  const returnCount = tickets.filter((t) => t.status === 'Return' || t.status === 'Waiting').length;
-  const inProgressCount = tickets.filter((t) => t.status === 'In progress').length;
-  const solvedCount = tickets.filter((t) => t.status === 'Solved').length;
-  const rejectCount = tickets.filter((t) => t.status === 'Reject').length;
+  const allCount = displayTickets.length;
+  const returnCount = displayTickets.filter((t) => t.status === 'Return' || t.status === 'Waiting').length;
+  const inProgressCount = displayTickets.filter((t) => t.status === 'In progress').length;
+  const solvedCount = displayTickets.filter((t) => t.status === 'Solved').length;
+  const rejectCount = displayTickets.filter((t) => t.status === 'Reject').length;
 
   // Filtered list
   const filteredTickets = useMemo(() => {
-    return tickets.filter((ticket) => {
+    return displayTickets.filter((ticket) => {
       // Status filter
       if (activeFilter !== 'All') {
         if (activeFilter === 'Return') {
@@ -55,13 +72,14 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
       }
       return true;
     });
-  }, [tickets, activeFilter, searchQuery]);
+  }, [displayTickets, activeFilter, searchQuery]);
 
   return (
     <div className="w-full h-screen min-h-screen flex overflow-hidden bg-[#ECF1F7] select-none">
       {/* ================= LEFT SIDEBAR ================= */}
       <Sidebar
         activeItem="my-tickets"
+        userRole={currentUser.role}
         onLogout={onLogout}
         onNavigate={onNavigate}
       />
@@ -78,11 +96,11 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
 
           {/* User Badge */}
           <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center">
-              DP
+            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
+              {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
             <span className="text-[13px] font-semibold text-[#1E293B]">
-              Damar Pratama
+              {currentUser.name}
             </span>
           </div>
         </div>
@@ -91,10 +109,12 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
         <div className="flex items-center justify-between gap-4 flex-shrink-0">
           <div>
             <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
-              My tickets
+              {currentUser.role === 'admin' ? 'Semua Tiket Helpdesk' : 'Daftar Tiket Saya'}
             </h1>
             <p className="text-[13px] leading-[20px] text-[#64748B] mt-0.5">
-              Every request you have submitted, newest first.
+              {currentUser.role === 'admin'
+                ? 'Seluruh antrean laporan tiket yang masuk ke sistem TI TRANS TV.'
+                : 'Daftar seluruh laporan tiket yang telah Anda ajukan, terbaru di atas.'}
             </p>
           </div>
 

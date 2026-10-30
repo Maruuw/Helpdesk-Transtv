@@ -2,13 +2,20 @@ import React, { useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { Eye, EyeOff, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
 
+export interface AuthUser {
+  nik: string;
+  name: string;
+  department: string;
+  role: 'user' | 'admin';
+}
+
 interface LoginPageProps {
-  onLoginSuccess?: () => void;
+  onLoginSuccess?: (user: AuthUser) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const [nik, setNik] = useState('231270322');
-  const [password, setPassword] = useState('password123');
+  const [nik, setNik] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<{ nik?: string; password?: string; general?: string } | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -24,12 +31,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       newErrors.password = 'Password wajib diisi';
     }
 
-    // Negative case example: if password is "salah" or NIK is "00000"
-    if (password === 'salah' || nik === '00000') {
+    let authenticatedUser: AuthUser | null = null;
+
+    if (nik.trim() === '231270322' && password === 'password123') {
+      authenticatedUser = {
+        nik: '231270322',
+        name: 'Damar Pratama',
+        department: 'Software Development',
+        role: 'user',
+      };
+    } else if ((nik.trim() === '100000001' || nik.trim().toLowerCase() === 'admin') && password === 'admin123') {
+      authenticatedUser = {
+        nik: '100000001',
+        name: 'Raden Azhar',
+        department: 'Information Technology',
+        role: 'admin',
+      };
+    } else {
       newErrors.general = 'NIK atau Password tidak terdaftar. Silakan periksa kembali data Anda.';
     }
 
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(newErrors).length > 0 || !authenticatedUser) {
       setError(newErrors);
       return;
     }
@@ -37,18 +59,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
     setIsAuthenticating(true);
 
-    // Save session
-    localStorage.setItem('helpdesk_user', JSON.stringify({
-      nik: nik.trim(),
-      name: 'Damar Pratama',
-      department: 'Software Development',
-    }));
+    // Save session in localStorage
+    localStorage.setItem('helpdesk_user', JSON.stringify(authenticatedUser));
 
     // Fullscreen loading transition then direct to Dashboard
     setTimeout(() => {
       setIsAuthenticating(false);
-      onLoginSuccess?.();
-    }, 1200);
+      onLoginSuccess?.(authenticatedUser);
+    }, 800);
   };
 
   return (
@@ -232,7 +250,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 Sign In
               </Button>
             </div>
-
           </form>
         </div>
 

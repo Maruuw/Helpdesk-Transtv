@@ -27,6 +27,12 @@ export interface ReportItem {
 }
 
 interface ReportPageProps {
+  currentUser?: {
+    nik: string;
+    name: string;
+    department: string;
+    role: 'user' | 'admin';
+  };
   onNavigate: (view: AppView) => void;
   onLogout: () => void;
 }
@@ -277,7 +283,16 @@ const MONTHS_LIST = [
   'Desember',
 ];
 
-export const ReportPage: React.FC<ReportPageProps> = ({ onNavigate, onLogout }) => {
+export const ReportPage: React.FC<ReportPageProps> = ({
+  currentUser = {
+    nik: '100000001',
+    name: 'Raden Azhar',
+    department: 'Information Technology',
+    role: 'admin',
+  },
+  onNavigate,
+  onLogout,
+}) => {
   // Filters
   const [selectedGroup, setSelectedGroup] = useState<string>('All Group');
   const [selectedYear, setSelectedYear] = useState<string>('Years');
@@ -410,6 +425,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onNavigate, onLogout }) 
       {/* ================= LEFT SIDEBAR ================= */}
       <Sidebar
         activeItem="report"
+        userRole={currentUser.role}
         onLogout={onLogout}
         onNavigate={onNavigate}
       />
@@ -426,11 +442,11 @@ export const ReportPage: React.FC<ReportPageProps> = ({ onNavigate, onLogout }) 
 
           {/* User Badge */}
           <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center">
-              DP
+            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
+              {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
             </div>
             <span className="text-[13px] font-semibold text-[#1E293B]">
-              Damar Pratama
+              {currentUser.name}
             </span>
           </div>
         </div>

@@ -6,8 +6,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeItem = 'dashboard',
   onNavigate,
   onLogout,
+  userRole = 'user',
 }) => {
-  const menuItems = [
+  const allMenuItems = [
     {
       id: 'dashboard' as ActiveMenuItem,
       label: 'Dashboard',
@@ -34,6 +35,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: MasterCategoryIcon,
     },
   ];
+
+  // RBAC: User biasa hanya memiliki 3 menu (Dashboard, Buat Tiket, Daftar Tiket)
+  // Admin memiliki seluruh menu (termasuk Report & Master Kategori)
+  const menuItems = userRole === 'user'
+    ? allMenuItems.filter((item) => item.id === 'dashboard' || item.id === 'create-ticket' || item.id === 'my-tickets')
+    : allMenuItems;
 
   return (
     <aside className="w-[248px] h-screen bg-[#0C3E7E] flex flex-col justify-between p-6 flex-shrink-0 select-none text-white">

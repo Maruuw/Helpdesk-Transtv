@@ -7,7 +7,10 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       blue: 'bg-[#2563EB]',
       orange: 'bg-[#C97D0C]',
       green: 'bg-[#1C9C4C]',
-    }[dotColor];
+      purple: 'bg-[#7C3AED]',
+      cyan: 'bg-[#0284C7]',
+      red: 'bg-[#DC2626]',
+    }[dotColor] || 'bg-[#2563EB]';
 
     return (
       <div

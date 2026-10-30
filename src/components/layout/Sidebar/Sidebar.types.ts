@@ -4,4 +4,5 @@ export interface SidebarProps {
   activeItem?: ActiveMenuItem;
   onNavigate?: (item: ActiveMenuItem) => void;
   onLogout?: () => void;
+  userRole?: 'user' | 'admin';
 }

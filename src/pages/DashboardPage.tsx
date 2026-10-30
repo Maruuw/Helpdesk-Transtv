@@ -1,120 +1,43 @@
 import React from 'react';
 import { Sidebar } from '@/components/layout';
-import { MetricCard, Badge, Button, Card } from '@/components/ui';
+import { MetricCard, Badge, Card } from '@/components/ui';
+import { TicketTrendChart } from '@/components/dashboard/TicketTrendChart';
 import { Plus } from 'lucide-react';
+import type { TicketRequestItem } from '@/types/ticket';
+import { initialLatestRequests } from '@/types/ticket';
 
-export interface TicketResponseItem {
-  id: string;
-  responder: string;
-  role: string;
-  submitted: string;
-  status?: 'Solved' | 'In progress' | 'Return' | 'Reject';
-  message: string;
-}
-
-export interface TicketRequestItem {
-  id: string;
-  no: number;
-  subject: string;
-  description?: string;
-  category: string;
-  subcategory: string;
-  submitted: string;
-  status: 'Solved' | 'In progress' | 'Waiting' | 'Return' | 'Pending' | 'Open' | 'Reject';
-  handler?: string;
-  requester?: string;
-  nik?: string;
-  department?: string;
-  attachments?: { id: string; name: string; size: string }[];
-  responses?: TicketResponseItem[];
-}
+export type { TicketRequestItem, TicketResponseItem } from '@/types/ticket';
+export { initialLatestRequests } from '@/types/ticket';
 
 interface DashboardPageProps {
+  currentUser?: {
+    nik: string;
+    name: string;
+    department: string;
+    role: 'user' | 'admin';
+  };
   onLogout?: () => void;
   onCreateTicket?: () => void;
   onViewAllTickets?: () => void;
   onNavigateMasterCategory?: () => void;
-  onNavigate?: (view: any) => void;
+  onNavigate?: (view: 'login' | 'dashboard' | 'create-ticket' | 'my-tickets' | 'ticket-detail' | 'master-category' | 'report') => void;
   onSelectTicket?: (ticket: TicketRequestItem) => void;
+  onUpdateTicket?: (
+    ticketId: string,
+    newStatus: 'Solved' | 'In progress' | 'Return' | 'Reject',
+    responseMessage: string,
+    handlerName?: string
+  ) => void;
   tickets?: TicketRequestItem[];
 }
 
-export const initialLatestRequests: TicketRequestItem[] = [
-  {
-    id: 'REQ-2026-001',
-    no: 1,
-    subject: 'test 123',
-    description: 'Mohon bantuan untuk perubahan data master karyawan pada sistem Insesys karena terdapat salah input penempatan divisi.',
-    category: 'Aplikasi Insesys (Umum)',
-    subcategory: 'Perubahan Data',
-    submitted: '21 Jan 2026, 18:46',
-    status: 'Solved',
-    handler: 'Raden Azhar Fadhlur Rohman',
-    requester: 'Raden Azhar Fadhlur Rohman',
-    nik: '231270322',
-    department: 'Information Technology',
-    attachments: [{ id: 'att-1', name: '[file-name.png]', size: '[Size]' }],
-  },
-  {
-    id: 'REQ-2026-002',
-    no: 2,
-    subject: 'Permintaan Akses VPN Kerja Remote & Server DB',
-    description: 'Permintaan open port dan akun VPN Cisco AnyConnect untuk keperluan remote deployment database weekend ini.',
-    category: 'Network & Security',
-    subcategory: 'Akses VPN & Firewall',
-    submitted: '25 Jan 2026, 10:15',
-    status: 'In progress',
-    handler: 'Tri Wahyudi (IT Infrastructure)',
-    requester: 'Raden Azhar Fadhlur Rohman',
-    nik: '231270322',
-    department: 'Information Technology',
-    attachments: [{ id: 'att-2', name: 'form_approval_vpn.pdf', size: '520 KB' }],
-  },
-  {
-    id: 'REQ-2026-003',
-    no: 3,
-    subject: 'Kendala Koneksi Printer Studio 1 News Lantai 3',
-    description: 'Printer Canon iR-ADV di meja produser Studio 1 offline dan tidak merespon print cue dari PC kontrol.',
-    category: 'Hardware & Perangkat',
-    subcategory: 'Printer / Scanner',
-    submitted: '26 Jan 2026, 14:30',
-    status: 'In progress',
-    handler: 'Fajar Nugraha',
-    requester: 'Raden Azhar Fadhlur Rohman',
-    nik: '231270322',
-    department: 'Information Technology',
-  },
-  {
-    id: 'REQ-2026-004',
-    no: 4,
-    subject: 'Reset Password Akun TransHub & Email Korporat',
-    description: 'Akun TransHub terkunci setelah salah memasukkan OTP 3 kali. Mohon bantuan reset password.',
-    category: 'Akun & Akses',
-    subcategory: 'User Management',
-    submitted: '27 Jan 2026, 08:20',
-    status: 'Return',
-    handler: 'Awaiting IT Assignment',
-    requester: 'Raden Azhar Fadhlur Rohman',
-    nik: '231270322',
-    department: 'Information Technology',
-  },
-  {
-    id: 'REQ-2026-005',
-    no: 5,
-    subject: 'Lisensi Software Adobe Premiere Pro Video Editor',
-    description: 'Pengajuan lisensi Adobe Creative Cloud Premiere Pro 2026 untuk unit video editing pasca produksi.',
-    category: 'Software License',
-    subcategory: 'Software Request',
-    submitted: '27 Jan 2026, 09:45',
-    status: 'Solved',
-    handler: 'Dimas Pratama',
-    requester: 'Raden Azhar Fadhlur Rohman',
-    nik: '231270322',
-    department: 'Information Technology',
-  },
-];
-
 export const DashboardPage: React.FC<DashboardPageProps> = ({
+  currentUser = {
+    nik: '231270322',
+    name: 'Damar Pratama',
+    department: 'Software Development',
+    role: 'user',
+  },
   onLogout,
   onCreateTicket,
   onViewAllTickets,
@@ -123,19 +46,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onSelectTicket,
   tickets = initialLatestRequests,
 }) => {
-  const currentRequests = tickets;
+  // RBAC: Jika User biasa, hanya tampilkan tiket miliknya
+  // Jika Admin IT, tampilkan seluruh tiket antrean sistem
+  const currentRequests = currentUser.role === 'user'
+    ? tickets.filter((t) => t.nik === currentUser.nik || t.requester === currentUser.name)
+    : tickets;
+
   const latestFiveRequests = currentRequests.slice(0, 5);
   const totalCount = currentRequests.length;
+  const openCount = currentRequests.filter((r) => r.status === 'Open').length;
   const returnCount = currentRequests.filter((r) => r.status === 'Return' || r.status === 'Waiting').length;
   const inProgressCount = currentRequests.filter((r) => r.status === 'In progress').length;
   const solvedCount = currentRequests.filter((r) => r.status === 'Solved').length;
 
   return (
     <div className="w-full h-screen min-h-screen flex overflow-hidden bg-[#ECF1F7] select-none">
-      
+
       {/* ================= LEFT SIDEBAR ================= */}
       <Sidebar
         activeItem="dashboard"
+        userRole={currentUser.role}
         onLogout={onLogout}
         onNavigate={(item) => {
           if (onNavigate) {
@@ -149,14 +79,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       />
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 h-screen overflow-hidden px-6 py-4 md:px-8 md:py-5 flex flex-col gap-3.5 md:gap-4">
-        
+      <main className="flex-1 h-screen overflow-y-auto px-6 py-4 md:px-8 md:py-5 flex flex-col gap-4 custom-scrollbar">
+
         {/* Top Logo */}
         <div className="flex items-center justify-between flex-shrink-0">
-          {/* ========================================================================= */}
-          {/* UKURAN LOGO HELPDESK DASHBOARD:                                           */}
-          {/* Ubah h-[42px] md:h-[48px] di bawah untuk memperbesar / memperkecil        */}
-          {/* ========================================================================= */}
           <img
             src="/assets/helpdesk.png"
             alt="Helpdesk Logo"
@@ -174,28 +100,50 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           />
 
           {/* Left Text Content with Gradient Backdrop to guarantee readability */}
-          <div className="relative z-10 p-5 md:p-6 max-w-[550px] bg-gradient-to-r from-[#0C3E7E] via-[#0C3E7E]/95 to-transparent h-full flex flex-col justify-between">
+          <div className="relative z-10 p-5 md:p-6 max-w-[550px] bg-gradient-to-r from-[#0C3E7E] via-[#0C3E7E]/95 to-transparent h-full flex flex-col justify-center">
             <div>
-              <span className="text-[12.5px] leading-[18px] text-blue-200/90 font-medium tracking-wide">
-                Software Development
+              <span className="text-[12px] leading-[16px] text-blue-200/90 font-medium tracking-wide">
+                {currentUser.department}
               </span>
-              <h1 className="text-[22px] sm:text-[26px] leading-[32px] font-extrabold text-white tracking-[-0.75px] mt-1 mb-0.5">
-                Welcome back, Damar!
+              <h1 className="text-[22px] sm:text-[25px] leading-[30px] font-extrabold text-white tracking-[-0.75px] mt-0.5 mb-0.5">
+                Welcome back, {currentUser.name}!
               </h1>
-              <p className="text-[11.5px] leading-[16px] text-blue-200/75">
-                Software Development
+              <p className="text-[11.5px] leading-[16px] text-blue-200/75 mb-3">
+                {currentUser.role === 'admin' ? `${currentUser.department} • IT Admin & Specialist` : currentUser.department}
               </p>
+              <button
+                type="button"
+                onClick={onCreateTicket}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-blue-50 text-[#0C3E7E] text-[12px] font-bold rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#0C3E7E]" />
+                <span>Create New Ticket</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* 4 Metric Cards Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
+        {/* 5 Metric Cards Row (Termasuk Open Ticket) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 flex-shrink-0">
           <MetricCard
             label="Total requests"
             value={totalCount.toString()}
-            subtitle="Submitted by you"
+            subtitle={currentUser.role === 'admin' ? 'Total all tickets' : 'Submitted by you'}
             dotColor="blue"
+            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
+          />
+          <MetricCard
+            label="Open"
+            value={openCount.toString()}
+            subtitle={currentUser.role === 'admin' ? 'Awaiting assignment' : 'Waiting pickup'}
+            dotColor="purple"
+            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
+          />
+          <MetricCard
+            label="In progress"
+            value={inProgressCount.toString()}
+            subtitle="Being handled"
+            dotColor="cyan"
             className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
           />
           <MetricCard
@@ -203,13 +151,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             value={returnCount.toString()}
             subtitle="Needs revision"
             dotColor="orange"
-            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
-          />
-          <MetricCard
-            label="In progress"
-            value={inProgressCount.toString()}
-            subtitle="Being handled"
-            dotColor="blue"
             className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
           />
           <MetricCard
@@ -221,62 +162,64 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           />
         </div>
 
-        {/* Bottom Split Section: Latest Requests Table & Got a new issue Card */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 pb-1">
-          
-          {/* ============ LEFT: Your 5 latest requests (2 Columns) ============ */}
-          <Card radius="xl" className="lg:col-span-2 p-5 md:p-6 flex flex-col h-full overflow-hidden shadow-sm">
+        {/* Bottom Split Section: Latest Requests Table (2/3 Width) & Ticket Trend Chart (1/3 Width) */}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 pb-6 flex-shrink-0">
+
+          {/* LEFT: 5 Latest Requests Table (2 Columns / ~67% Width) */}
+          <Card radius="xl" className="lg:col-span-2 w-full p-4 md:p-5 flex flex-col justify-between h-full shadow-sm bg-white border border-slate-200/80 overflow-hidden min-h-[350px]">
             {/* Header */}
             <div className="flex items-center justify-between mb-3 flex-shrink-0">
-              <h2 className="text-[16px] leading-[24px] font-bold text-[#0F172A]">
-                Your 5 latest requests
+              <h2 className="text-[15px] leading-[22px] font-bold text-[#0F172A]">
+                {currentUser.role === 'admin' ? 'Your 5 latest ticket by USER' : 'Your 5 latest requests'}
               </h2>
               <button
+                type="button"
                 onClick={onViewAllTickets}
-                className="text-[12px] font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline transition-colors"
+                className="text-[12px] font-semibold text-[#2563EB] hover:text-[#1d4ed8] hover:underline transition-colors cursor-pointer"
               >
                 View all
               </button>
             </div>
 
-            {/* Requests Table Container: only this scrolls vertically if needed */}
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto pr-1.5 custom-scrollbar">
+            {/* Requests Table Container */}
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto pr-1 custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-white z-10 shadow-[0_1px_0_0_#f1f5f9]">
-                  <tr className="border-b border-slate-100 text-[11.5px] leading-[17.25px] font-semibold text-[#64748B]">
+                  <tr className="border-b border-slate-100 text-[11px] leading-[16px] font-semibold text-[#64748B]">
                     <th className="pb-2.5 pl-1 font-semibold w-[36px]">No</th>
-                    <th className="pb-2.5 px-3 font-semibold">Subject</th>
-                    <th className="pb-2.5 px-3 font-semibold">Category</th>
-                    <th className="pb-2.5 px-3 font-semibold">Submitted</th>
-                    <th className="pb-2.5 pr-1 font-semibold text-right sm:text-left">Status</th>
+                    <th className="pb-2.5 px-3 font-semibold min-w-[200px]">Subject</th>
+                    <th className="pb-2.5 px-3 font-semibold w-[180px] hidden sm:table-cell">Category</th>
+                    <th className="pb-2.5 px-3 font-semibold w-[140px] whitespace-nowrap">Submitted</th>
+                    <th className="pb-2.5 pr-1 font-semibold text-right sm:text-left w-[140px]">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {latestFiveRequests.map((req, index) => (
                     <tr key={req.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-2.5 pl-1 text-[12px] font-medium text-[#64748B] align-top">
+                      <td className="py-3 pl-1 text-[11.5px] font-medium text-[#64748B] align-top">
                         {index + 1}
                       </td>
-                      <td className="py-2.5 px-3 align-top max-w-[210px]">
+                      <td className="py-3 px-3 align-top">
                         <button
+                          type="button"
                           onClick={() => onSelectTicket ? onSelectTicket(req) : onViewAllTickets?.()}
-                          className="text-[13px] font-bold text-[#0F172A] hover:text-[#2563EB] transition-colors text-left line-clamp-2 leading-snug cursor-pointer"
+                          className="text-[12.5px] font-bold text-[#0F172A] hover:text-[#2563EB] transition-colors text-left line-clamp-2 leading-snug cursor-pointer"
                         >
                           {req.subject}
                         </button>
                       </td>
-                      <td className="py-2.5 px-3 align-top">
-                        <div className="text-[12px] font-semibold text-[#1E293B]">
+                      <td className="py-3 px-3 align-top hidden sm:table-cell">
+                        <div className="text-[12px] font-semibold text-[#1E293B] leading-tight">
                           {req.category}
                         </div>
-                        <div className="text-[11px] text-[#64748B] mt-0.5">
+                        <div className="text-[11px] text-[#64748B] mt-0.5 leading-tight">
                           {req.subcategory}
                         </div>
                       </td>
-                      <td className="py-2.5 px-3 text-[12px] text-[#1E293B] whitespace-nowrap align-top">
+                      <td className="py-3 px-3 text-[11.5px] text-[#1E293B] whitespace-nowrap align-top">
                         {req.submitted}
                       </td>
-                      <td className="py-2.5 pr-1 align-top text-right sm:text-left">
+                      <td className="py-3 pr-1 align-top text-right sm:text-left">
                         <div>
                           <Badge status={req.status} />
                         </div>
@@ -293,29 +236,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </Card>
 
-          {/* ============ RIGHT: Got a new issue? (1 Column) ============ */}
-          <Card radius="xl" className="p-5 md:p-6 flex flex-col justify-between h-full shadow-sm">
-            <div>
-              <h2 className="text-[16px] leading-[24px] font-bold text-[#0F172A] mb-2">
-                Got a new issue?
-              </h2>
-              <p className="text-[13px] leading-[20px] text-[#64748B]">
-                Send a request and follow its status right here.
-              </p>
-            </div>
-
-            <div className="pt-4">
-              <Button
-                variant="primary-list"
-                size="md"
-                onClick={onCreateTicket}
-                leftIcon={<Plus className="w-4 h-4 text-white" />}
-                className="w-full py-[12px] text-[13px] font-semibold bg-[#193B70] hover:bg-[#122c54] text-white shadow-sm"
-              >
-                Create New Ticket
-              </Button>
-            </div>
-          </Card>
+          {/* RIGHT: Modern Interactive Line Chart (1 Column / ~33% Width) */}
+          <div className="lg:col-span-1 w-full h-full min-h-[350px]">
+            <TicketTrendChart tickets={currentRequests} />
+          </div>
 
         </div>
 

@@ -12,8 +12,6 @@ import {
   AlertCircle,
   Clock,
   CheckCheck,
-  User,
-  ShieldCheck,
   CornerDownRight,
   X,
 } from 'lucide-react';
@@ -21,6 +19,12 @@ import {
 import type { AppView } from '@/App';
 
 interface TicketDetailPageProps {
+  currentUser?: {
+    nik: string;
+    name: string;
+    department: string;
+    role: 'user' | 'admin';
+  };
   ticket: TicketRequestItem;
   onBack: () => void;
   onNavigate: (view: AppView) => void;
@@ -55,6 +59,12 @@ const ADMIN_STATUS_OPTIONS: { value: AvailableStatus; label: string; dotClass: s
 ];
 
 export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
+  currentUser = {
+    nik: '231270322',
+    name: 'Damar Pratama',
+    department: 'Software Development',
+    role: 'user',
+  },
   ticket,
   onBack,
   onNavigate,
@@ -70,8 +80,8 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
   // Extract clean ID number
   const numericId = ticket.id.replace(/\D/g, '') || '1234567789';
 
-  // Toggle POV: 'admin' (IT Support) or 'user' (Pemohon Tiket)
-  const [currentPOV, setCurrentPOV] = useState<'admin' | 'user'>('admin');
+  // POV otomatis diambil dari role user yang sedang aktif login (tanpa switcher tiruan)
+  const currentPOV = currentUser.role;
 
   // Form states for Admin Response
   const [selectedStatus, setSelectedStatus] = useState<AvailableStatus | ''>('');
@@ -179,13 +189,14 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
       {/* ================= LEFT SIDEBAR ================= */}
       <Sidebar
         activeItem="my-tickets"
+        userRole={currentUser.role}
         onLogout={onLogout}
         onNavigate={onNavigate}
       />
 
       {/* ================= MAIN CONTENT AREA ================= */}
       <main className="flex-1 h-screen overflow-y-auto px-6 py-6 md:px-8 md:py-7 flex flex-col gap-6 custom-scrollbar">
-        {/* Top Header Row: Logo Helpdesk on Left, POV Switcher & User Badge on Right */}
+        {/* Top Header Row: Logo Helpdesk on Left, User Badge on Right */}
         <div className="flex items-center justify-between flex-shrink-0 flex-wrap gap-4">
           <img
             src="/assets/helpdesk.png"
@@ -194,45 +205,19 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
           />
 
           <div className="flex items-center gap-3">
-            {/* POV / Role Switcher Toggle */}
-            <div className="flex items-center bg-white p-1 rounded-full border border-slate-200/90 shadow-sm text-[12px] font-semibold">
-              <span className="text-[#64748B] px-2.5 text-[11px] uppercase tracking-wider font-bold hidden sm:inline">
-                Mode POV:
-              </span>
-              <button
-                type="button"
-                onClick={() => setCurrentPOV('admin')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-                  currentPOV === 'admin'
-                    ? 'bg-[#153F85] text-white shadow-sm'
-                    : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin (IT)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentPOV('user')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-                  currentPOV === 'user'
-                    ? 'bg-[#153F85] text-white shadow-sm'
-                    : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>{ticket.requester || 'Damar Pratama'}</span>
-              </button>
-            </div>
-
-            {/* User Profile Badge */}
+            {/* User Profile Badge (Real Account Status) */}
             <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-              <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center">
-                {currentPOV === 'admin' ? 'IT' : 'DP'}
+              <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
+                {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
               </div>
-              <span className="text-[13px] font-semibold text-[#1E293B]">
-                {currentPOV === 'admin' ? 'Raden Azhar (IT)' : 'Damar Pratama'}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-[13px] font-semibold text-[#1E293B] leading-tight">
+                  {currentUser.name}
+                </span>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {currentUser.role === 'admin' ? 'IT Support Admin' : 'Employee (Pemohon)'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

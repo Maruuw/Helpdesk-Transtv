@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout';
 import { MetricCard, Badge, Card } from '@/components/ui';
 import { TicketTrendChart } from '@/components/dashboard/TicketTrendChart';
 import { Plus } from 'lucide-react';
 import type { TicketRequestItem } from '@/types/ticket';
 import { initialLatestRequests } from '@/types/ticket';
+import { helpdeskApi } from '@/services/api';
 
 export type { TicketRequestItem, TicketResponseItem } from '@/types/ticket';
 export { initialLatestRequests } from '@/types/ticket';
@@ -34,7 +35,7 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   currentUser = {
     nik: '231270322',
-    name: 'Damar Pratama',
+    name: 'Karyawan',
     department: 'Software Development',
     role: 'user',
   },
@@ -46,18 +47,62 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onSelectTicket,
   tickets = initialLatestRequests,
 }) => {
-  // RBAC: Jika User biasa, hanya tampilkan tiket miliknya
-  // Jika Admin IT, tampilkan seluruh tiket antrean sistem
+  // Live Dashboard Statistics from MySQL Backend API
+  const [dbStats, setDbStats] = useState<{
+    metrics: {
+      total: number;
+      open: number;
+      in_progress: number;
+      return: number;
+      solved: number;
+      reject?: number;
+    };
+    latest_tickets: any[];
+    chart_trend?: {
+      labels: string[];
+      incoming: number[];
+      resolved: number[];
+    };
+    department_distribution?: any[];
+  } | null>(null);
+
+  // Ambil data agregat riil dari MySQL db_helpdesk via Laravel API
+  useEffect(() => {
+    let isMounted = true;
+    const targetNik = currentUser.role === 'user' ? currentUser.nik : undefined;
+
+    helpdeskApi
+      .getDashboardStats(targetNik)
+      .then((res) => {
+        if (isMounted && res.success && res.data) {
+          setDbStats(res.data);
+        }
+      })
+      .catch((err) => {
+        console.warn('API getDashboardStats error, fallback ke data lokal:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser.nik, currentUser.role, tickets]);
+
+  // RBAC Filter lokal (sebagai data fallback)
   const currentRequests = currentUser.role === 'user'
     ? tickets.filter((t) => t.nik === currentUser.nik || t.requester === currentUser.name)
     : tickets;
 
-  const latestFiveRequests = currentRequests.slice(0, 5);
-  const totalCount = currentRequests.length;
-  const openCount = currentRequests.filter((r) => r.status === 'Open').length;
-  const returnCount = currentRequests.filter((r) => r.status === 'Return' || r.status === 'Waiting').length;
-  const inProgressCount = currentRequests.filter((r) => r.status === 'In progress').length;
-  const solvedCount = currentRequests.filter((r) => r.status === 'Solved').length;
+  // Hitung metrik: Utamakan agregat database (884 tiket) jika tersedia
+  const totalCount = dbStats?.metrics ? dbStats.metrics.total : currentRequests.length;
+  const openCount = dbStats?.metrics ? dbStats.metrics.open : currentRequests.filter((r) => r.status === 'Open').length;
+  const returnCount = dbStats?.metrics ? dbStats.metrics.return : currentRequests.filter((r) => r.status === 'Return' || r.status === 'Waiting').length;
+  const inProgressCount = dbStats?.metrics ? dbStats.metrics.in_progress : currentRequests.filter((r) => r.status === 'In progress').length;
+  const solvedCount = dbStats?.metrics ? dbStats.metrics.solved : currentRequests.filter((r) => r.status === 'Solved').length;
+
+  // 5 Tiket Terbaru: gunakan dari API agregat database jika ada, atau fallback lokal
+  const latestFiveRequests = (dbStats?.latest_tickets && dbStats.latest_tickets.length > 0)
+    ? dbStats.latest_tickets
+    : currentRequests.slice(0, 5);
 
   return (
     <div className="w-full h-screen min-h-screen flex overflow-hidden bg-[#ECF1F7] select-none">
@@ -238,7 +283,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
           {/* RIGHT: Modern Interactive Line Chart (1 Column / ~33% Width) */}
           <div className="lg:col-span-1 w-full h-full min-h-[350px]">
-            <TicketTrendChart tickets={currentRequests} />
+            <TicketTrendChart
+              tickets={currentRequests}
+              apiChartTrend={dbStats?.chart_trend}
+            />
           </div>
 
         </div>

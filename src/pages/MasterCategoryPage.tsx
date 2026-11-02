@@ -150,21 +150,14 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
     const targetGroupId = grpObj ? grpObj.id : 1;
 
     try {
-      // POST ke Laravel API
-      const res = await fetch('http://localhost:8000/api/categories', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': 'transtv-helpdesk-secret-key-2026',
-        },
-        body: JSON.stringify({
-          name: nameCategory.trim(),
-          group_id: targetGroupId,
-          is_visible: 0,
-        }),
+      // POST ke Laravel API via centralized API service
+      const res = await helpdeskApi.createCategory({
+        name: nameCategory.trim(),
+        group_id: targetGroupId,
+        is_visible: 0,
       });
 
-      if (res.ok) {
+      if (res.success) {
         await fetchCategoriesFromApi();
         setSuccessToast(`Kategori "${nameCategory.trim()}" berhasil dibuat ke database!`);
       } else {
@@ -234,10 +227,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
   // Handle Delete Category
   const handleDeleteCategory = async (id: string, name: string) => {
     try {
-      await fetch(`http://localhost:8000/api/categories/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-API-KEY': 'transtv-helpdesk-secret-key-2026' },
-      });
+      await helpdeskApi.deleteCategory(id);
     } catch (e) {
       console.warn('API delete error, remove locally:', e);
     }

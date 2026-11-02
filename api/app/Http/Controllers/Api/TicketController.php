@@ -394,11 +394,14 @@ class TicketController extends Controller
                     'id' => $t->no_tiket,
                     'no' => $idx + 1,
                     'subject' => $t->tiket_subject,
+                    'description' => strip_tags(str_replace(['<br>', '<br />', '<br/>'], "\n", $t->tiket_problem)),
                     'category' => $t->kategori->group->nama_group ?? 'IT Support',
                     'subcategory' => $t->kategori->tiketkategori_nama ?? 'Umum',
                     'submitted' => Carbon::parse($t->tiket_createdate)->locale('id')->translatedFormat('d M Y, H:i'),
                     'status' => $this->mapStatusName($t->tiket_statusid),
                     'handler' => $t->handler->nama_karyawan ?? null,
+                    'requester' => $t->requester->nama_karyawan ?? ('Karyawan (' . $t->tiket_createby . ')'),
+                    'nik' => $t->tiket_createby,
                 ];
             });
 
@@ -434,8 +437,9 @@ class TicketController extends Controller
             ->get();
 
         $pieColors = ['#0C3E7E', '#2563EB', '#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6'];
-        $pieData = $departmentDistribution->map(function ($item, $idx) use ($total, $pieColors) {
-            $percentage = $total > 0 ? round(($item->total_tickets / $total) * 100, 1) : 0;
+        $globalTotal = DB::table('tiket')->count();
+        $pieData = $departmentDistribution->map(function ($item, $idx) use ($globalTotal, $pieColors) {
+            $percentage = $globalTotal > 0 ? round(($item->total_tickets / $globalTotal) * 100, 1) : 0;
             return [
                 'name' => $item->department_name,
                 'count' => $item->total_tickets,

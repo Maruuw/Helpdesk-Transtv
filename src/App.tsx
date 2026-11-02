@@ -17,12 +17,7 @@ function App() {
     const saved = localStorage.getItem('helpdesk_user');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.role === 'admin' && (parsed.name === 'Tri Wahyudi' || parsed.nik === '100000001')) {
-          parsed.name = 'Raden Azhar';
-          localStorage.setItem('helpdesk_user', JSON.stringify(parsed));
-        }
-        return parsed;
+        return JSON.parse(saved);
       } catch {
         return null;
       }
@@ -113,9 +108,9 @@ function App() {
       submitted: dateFormatted,
       status: 'Open',
       handler: 'Awaiting IT Assignment',
-      requester: currentUser?.name || 'Raden Azhar Fadhlur',
-      nik: currentUser?.nik || '231270322',
-      department: currentUser?.department || 'Information Technology',
+      requester: currentUser?.name || 'Karyawan',
+      nik: currentUser?.nik || '',
+      department: currentUser?.department || 'Staff',
       attachments: newTicket.attachments,
     };
 

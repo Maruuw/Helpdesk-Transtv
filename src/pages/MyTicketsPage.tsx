@@ -25,8 +25,8 @@ type StatusFilter = 'All' | 'Return' | 'In progress' | 'Solved' | 'Reject';
 export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
   currentUser = {
     nik: '231270322',
-    name: 'Damar Pratama',
-    department: 'Software Development',
+    name: 'Karyawan',
+    department: 'Staff',
     role: 'user',
   },
   tickets,

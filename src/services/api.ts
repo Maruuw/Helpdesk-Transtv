@@ -178,11 +178,26 @@ export const helpdeskApi = {
     }>>('/categories');
   },
 
+  // 7b. Master Kategori: Membuat Kategori Baru
+  createCategory: async (data: { name: string; group_id: number; is_visible?: boolean | number }) => {
+    return request<ApiResponse<any>>('/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   // 8. Master Kategori: Update Kategori (misal toggle Hide / Unhide)
   updateCategory: async (id: string, data: { name?: string; group_id?: number; is_visible?: boolean | number }) => {
     return request<ApiResponse<any>>(`/categories/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  },
+
+  // 8b. Master Kategori: Menghapus Kategori
+  deleteCategory: async (id: string) => {
+    return request<ApiResponse<any>>(`/categories/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
     });
   },
 

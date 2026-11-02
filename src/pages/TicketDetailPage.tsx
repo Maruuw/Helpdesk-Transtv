@@ -343,7 +343,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     Requester
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {liveTicket.requester || 'Raden Azhar Fadhlur Rohman'}
+                    {liveTicket.requester || 'Pemohon Tiket'}
                   </div>
                 </div>
 
@@ -353,7 +353,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     NIK
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {liveTicket.nik || '231270322'}
+                    {liveTicket.nik || '-'}
                   </div>
                 </div>
 
@@ -363,7 +363,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     Departement
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {liveTicket.department || 'Information Technology'}
+                    {liveTicket.department || 'TRANS TV'}
                   </div>
                 </div>
 
@@ -633,7 +633,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                   <div className="bg-[#FEF5E7] border border-[#C97D0C]/30 rounded-[14px] p-3.5 text-[#C97D0C]">
                     <div className="flex items-center gap-2 font-bold text-[13.5px]">
                       <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span>Menunggu Tanggapan Pemohon ({liveTicket.requester || 'Damar Pratama'})</span>
+                      <span>Menunggu Tanggapan Pemohon ({liveTicket.requester || 'Pemohon'})</span>
                     </div>
                   </div>
                 )
@@ -880,7 +880,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     </div>
                     <div className="text-[11px] text-[#64748B] mt-0.5">
                       {isSolved
-                        ? `by ${liveTicket.handler || 'Raden Azhar Fadhlur Rohman'}`
+                        ? `by ${liveTicket.handler || 'IT Support'}`
                         : isReject
                         ? `Ditolak oleh ${liveTicket.handler || 'IT Support'}`
                         : 'Waiting for resolution'}

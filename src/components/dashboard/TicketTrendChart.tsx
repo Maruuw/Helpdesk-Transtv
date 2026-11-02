@@ -15,6 +15,11 @@ interface PeriodDataset {
 
 export interface TicketTrendChartProps {
   tickets?: TicketRequestItem[];
+  apiChartTrend?: {
+    labels: string[];
+    incoming: number[];
+    resolved: number[];
+  };
 }
 
 // Algoritma cubic spline halus untuk kurva grafik modern
@@ -45,36 +50,44 @@ const createAreaPath = (points: { x: number; y: number }[], bottomY: number): st
   return `${linePath} L ${last.x.toFixed(1)} ${bottomY} L ${first.x.toFixed(1)} ${bottomY} Z`;
 };
 
-export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({ tickets = initialLatestRequests }) => {
+export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({
+  tickets = initialLatestRequests,
+  apiChartTrend,
+}) => {
   const [period, setPeriod] = useState<ChartPeriod>('hari');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // Komputasi Dataset Dinamis berdasarkan array tickets aktif (tidak dummy berlebihan)
+  // Komputasi Dataset Dinamis berdasarkan array tickets aktif & data API
   const datasets = useMemo<Record<ChartPeriod, PeriodDataset>>(() => {
     // 1. DATASET HARIAN (Sen - Min)
-    const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-    const dailyIncoming = [0, 0, 0, 0, 0, 0, 0];
-    const dailyResolved = [0, 0, 0, 0, 0, 0, 0];
+    const dayLabels = apiChartTrend?.labels || ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+    let dailyIncoming = [0, 0, 0, 0, 0, 0, 0];
+    let dailyResolved = [0, 0, 0, 0, 0, 0, 0];
 
-    tickets.forEach((t) => {
-      let dayIndex = 4; // default Jumat (hari kerja aktif saat ini)
+    if (apiChartTrend && Array.isArray(apiChartTrend.incoming) && apiChartTrend.incoming.length === 7) {
+      dailyIncoming = [...apiChartTrend.incoming];
+      dailyResolved = Array.isArray(apiChartTrend.resolved) ? [...apiChartTrend.resolved] : [0, 0, 0, 0, 0, 0, 0];
+    } else {
+      tickets.forEach((t) => {
+        let dayIndex = 4; // default Jumat (hari kerja aktif saat ini)
 
-      if (t.id === 'REQ-2026-001') dayIndex = 2; // Rab
-      else if (t.id === 'REQ-2026-002') dayIndex = 6; // Min
-      else if (t.id === 'REQ-2026-003') dayIndex = 0; // Sen
-      else if (t.id === 'REQ-2026-004') dayIndex = 1; // Sel
-      else if (t.id === 'REQ-2026-005') dayIndex = 1; // Sel
-      else {
-        // Tiket yang baru dibuat: alokasikan ke hari ini
-        const now = new Date().getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
-        dayIndex = now === 0 ? 6 : now - 1;
-      }
+        if (t.id === 'REQ-2026-001') dayIndex = 2; // Rab
+        else if (t.id === 'REQ-2026-002') dayIndex = 6; // Min
+        else if (t.id === 'REQ-2026-003') dayIndex = 0; // Sen
+        else if (t.id === 'REQ-2026-004') dayIndex = 1; // Sel
+        else if (t.id === 'REQ-2026-005') dayIndex = 1; // Sel
+        else {
+          // Tiket yang baru dibuat: alokasikan ke hari ini
+          const now = new Date().getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+          dayIndex = now === 0 ? 6 : now - 1;
+        }
 
-      dailyIncoming[dayIndex] += 1;
-      if (t.status === 'Solved') {
-        dailyResolved[dayIndex] += 1;
-      }
-    });
+        dailyIncoming[dayIndex] += 1;
+        if (t.status === 'Solved') {
+          dailyResolved[dayIndex] += 1;
+        }
+      });
+    }
 
     const totalSolved = tickets.filter((t) => t.status === 'Solved').length;
 

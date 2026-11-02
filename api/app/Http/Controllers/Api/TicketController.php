@@ -145,10 +145,20 @@ class TicketController extends Controller
 
         // Format attachments
         $attachments = $ticket->attachments->map(function ($att) {
+            $url = null;
+            if (!empty($att->path_file)) {
+                if (str_starts_with($att->path_file, 'http://') || str_starts_with($att->path_file, 'https://')) {
+                    $url = $att->path_file;
+                } else {
+                    $url = url('storage/' . ltrim($att->path_file, '/'));
+                }
+            }
+
             return [
                 'id' => (string) $att->id_attachment,
                 'name' => $att->filename ?? basename($att->path_file ?? 'file'),
                 'path' => $att->path_file,
+                'url' => $url,
                 'size' => 'Dokumen',
             ];
         });
@@ -175,7 +185,7 @@ class TicketController extends Controller
 
     /**
      * POST /api/tickets
-     * Buat tiket baru ke database.
+     * Buat tiket baru ke database beserta upload lampiran (tbl_attachment).
      */
     public function store(Request $request)
     {
@@ -185,6 +195,7 @@ class TicketController extends Controller
             'nik' => 'required|string',
             'tiketkategori_id' => 'nullable|integer',
             'id_group' => 'nullable|integer',
+            'attachments.*' => 'nullable|file|max:25600',
         ]);
 
         // Generate No Tiket unik (timestamp epoch 10 digit standar helpdesk lama)
@@ -204,6 +215,9 @@ class TicketController extends Controller
         // Simpan data spesifikasi teknis form jika ada (tbl_dataform)
         if ($request->filled('dataform')) {
             $df = $request->input('dataform');
+            if (is_string($df)) {
+                $df = json_decode($df, true) ?: [];
+            }
             \App\Models\Dataform::create([
                 'no_tiket' => $noTiket,
                 'disetujui' => $df['disetujui'] ?? 'ya',
@@ -218,6 +232,37 @@ class TicketController extends Controller
             ]);
         }
 
+        // Upload lampiran file ke storage/app/public/attachments dan simpan ke tbl_attachment
+        $uploadedAttachments = [];
+        if ($request->hasFile('attachments')) {
+            $files = $request->file('attachments');
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+
+            foreach ($files as $file) {
+                if ($file && $file->isValid()) {
+                    $originalName = $file->getClientOriginalName();
+                    $cleanName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $storedPath = $file->storeAs('attachments', $cleanName, 'public');
+
+                    $attachment = \App\Models\Attachment::create([
+                        'no_tiket' => $noTiket,
+                        'filename' => $originalName,
+                        'path_file' => $storedPath,
+                    ]);
+
+                    $uploadedAttachments[] = [
+                        'id' => (string) $attachment->id_attachment,
+                        'name' => $originalName,
+                        'path' => $storedPath,
+                        'url' => url('storage/' . $storedPath),
+                        'size' => round($file->getSize() / 1024, 1) . ' KB',
+                    ];
+                }
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Tiket berhasil dibuat',
@@ -225,8 +270,48 @@ class TicketController extends Controller
                 'id' => $ticket->no_tiket,
                 'subject' => $ticket->tiket_subject,
                 'status' => 'Open',
+                'attachments' => $uploadedAttachments,
             ],
         ], 201);
+    }
+
+    /**
+     * POST /api/tickets/{no_tiket}/attachments
+     * Upload lampiran tambahan ke tiket yang sudah ada
+     */
+    public function uploadAttachment(Request $request, $no_tiket)
+    {
+        $ticket = Tiket::where('no_tiket', $no_tiket)->first();
+        if (!$ticket) {
+            return response()->json(['success' => false, 'message' => 'Tiket tidak ditemukan'], 404);
+        }
+
+        $request->validate([
+            'file' => 'required|file|max:25600',
+        ]);
+
+        $file = $request->file('file');
+        $originalName = $file->getClientOriginalName();
+        $cleanName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $storedPath = $file->storeAs('attachments', $cleanName, 'public');
+
+        $attachment = \App\Models\Attachment::create([
+            'no_tiket' => $no_tiket,
+            'filename' => $originalName,
+            'path_file' => $storedPath,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lampiran berhasil diunggah',
+            'data' => [
+                'id' => (string) $attachment->id_attachment,
+                'name' => $originalName,
+                'path' => $storedPath,
+                'url' => url('storage/' . $storedPath),
+                'size' => round($file->getSize() / 1024, 1) . ' KB',
+            ],
+        ]);
     }
 
     /**

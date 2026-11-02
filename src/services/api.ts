@@ -23,7 +23,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const url = `${API_BASE_URL}${endpoint}`;
   
   const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
+  // Jangan set Content-Type jika body berupa FormData agar browser mengatur multipart boundary secara otomatis
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
   headers.set('Accept', 'application/json');
   headers.set('X-API-KEY', API_KEY);
 
@@ -93,13 +96,14 @@ export const helpdeskApi = {
     return request<ApiResponse<any>>(`/tickets/${encodeURIComponent(noTiket)}`);
   },
 
-  // 5. Tiket: Membuat tiket baru
+  // 5. Tiket: Membuat tiket baru (Mendukung upload lampiran File ke tbl_attachment)
   createTicket: async (ticketData: {
     subject: string;
     description: string;
     nik: string;
     id_group?: number;
     tiketkategori_id?: number;
+    attachments?: File[];
     dataform?: {
       disetujui?: string;
       pembuatan?: string;
@@ -111,9 +115,44 @@ export const helpdeskApi = {
       user_note?: string;
     };
   }) => {
+    // Jika ada lampiran berkas fisik, kirim menggunakan FormData multipart
+    if (ticketData.attachments && ticketData.attachments.length > 0) {
+      const formData = new FormData();
+      formData.append('subject', ticketData.subject);
+      formData.append('description', ticketData.description);
+      formData.append('nik', ticketData.nik);
+      if (ticketData.id_group) {
+        formData.append('id_group', String(ticketData.id_group));
+      }
+      if (ticketData.tiketkategori_id) {
+        formData.append('tiketkategori_id', String(ticketData.tiketkategori_id));
+      }
+      if (ticketData.dataform) {
+        formData.append('dataform', JSON.stringify(ticketData.dataform));
+      }
+      ticketData.attachments.forEach((file) => {
+        formData.append('attachments[]', file);
+      });
+
+      return request<ApiResponse<any>>('/tickets', {
+        method: 'POST',
+        body: formData,
+      });
+    }
+
     return request<ApiResponse<any>>('/tickets', {
       method: 'POST',
       body: JSON.stringify(ticketData),
+    });
+  },
+
+  // 5b. Upload lampiran tambahan ke tiket yang sudah ada
+  uploadAttachment: async (noTiket: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<ApiResponse<any>>(`/tickets/${encodeURIComponent(noTiket)}/attachments`, {
+      method: 'POST',
+      body: formData,
     });
   },
 

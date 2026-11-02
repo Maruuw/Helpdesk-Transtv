@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/layout';
 import { Card, Badge, Button } from '@/components/ui';
 import type { TicketRequestItem } from './DashboardPage';
+import { helpdeskApi } from '@/services/api';
 import {
   FileText,
   ArrowLeft,
@@ -14,6 +15,7 @@ import {
   CheckCheck,
   CornerDownRight,
   X,
+  RefreshCw,
 } from 'lucide-react';
 
 import type { AppView } from '@/App';
@@ -71,14 +73,57 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
   onLogout,
   onUpdateTicket,
 }) => {
-  const isSolved = ticket.status === 'Solved';
-  const isInProgress = ticket.status === 'In progress' || ticket.status === 'On Process';
-  const isReturn = ticket.status === 'Return';
-  const isReject = ticket.status === 'Reject' || ticket.status === 'Rejected';
+  const [liveTicket, setLiveTicket] = useState<TicketRequestItem>(ticket);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Sync state saat prop ticket berubah
+  useEffect(() => {
+    setLiveTicket(ticket);
+  }, [ticket]);
+
+  // Live fetch function dari Backend API (MySQL db_helpdesk)
+  const fetchLiveTicket = async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
+    try {
+      const res = await helpdeskApi.getTicketDetail(ticket.id);
+      if (res.success && res.data) {
+        setLiveTicket((prev) => ({
+          ...prev,
+          id: res.data.id ?? prev.id,
+          subject: res.data.subject ?? prev.subject,
+          description: res.data.description ?? prev.description,
+          category: res.data.category ?? prev.category,
+          subcategory: res.data.subcategory ?? prev.subcategory,
+          submitted: res.data.submitted ?? prev.submitted,
+          status: res.data.status ?? prev.status,
+          handler: res.data.handler ?? prev.handler,
+          handler_nik: res.data.handler_nik ?? prev.handler_nik,
+          requester: res.data.requester ?? prev.requester,
+          nik: res.data.nik ?? prev.nik,
+          attachments: Array.isArray(res.data.attachments) ? res.data.attachments : prev.attachments,
+          responses: Array.isArray(res.data.responses) ? res.data.responses : prev.responses,
+        }));
+      }
+    } catch (err) {
+      console.warn('Gagal memuat detail tiket live dari API:', err);
+    } finally {
+      if (!silent) setIsRefreshing(false);
+    }
+  };
+
+  // Auto-fetch data tiket live saat halaman dibuka atau ticket.id berganti
+  useEffect(() => {
+    fetchLiveTicket();
+  }, [ticket.id]);
+
+  const isSolved = liveTicket.status === 'Solved';
+  const isInProgress = liveTicket.status === 'In progress' || liveTicket.status === 'On Process';
+  const isReturn = liveTicket.status === 'Return';
+  const isReject = liveTicket.status === 'Reject' || liveTicket.status === 'Rejected';
   const isClosed = isSolved || isReject;
 
   // Extract clean ID number
-  const numericId = ticket.id.replace(/\D/g, '') || '1234567789';
+  const numericId = liveTicket.id.replace(/\D/g, '') || '1234567789';
 
   // POV otomatis diambil dari role user yang sedang aktif login (tanpa switcher tiruan)
   const currentPOV = currentUser.role;
@@ -101,11 +146,11 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
   const [solvedNote, setSolvedNote] = useState('');
 
   // Check turn-based reply state:
-  const responses = ticket.responses || [];
+  const responses = liveTicket.responses || [];
   const lastResponse = responses.length > 0 ? responses[responses.length - 1] : null;
   const isLastResponseFromUser = lastResponse?.role === 'User';
 
-  const hasAdminReturned = ticket.status === 'Return';
+  const hasAdminReturned = liveTicket.status === 'Return';
   // Admin can reply if not closed AND (not returned OR user has replied)
   const canAdminReply = !isClosed && (!hasAdminReturned || isLastResponseFromUser);
   // User can reply return if status is Return AND user has not replied yet
@@ -125,10 +170,10 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
 
     setAdminError(null);
     onUpdateTicket?.(
-      ticket.id,
+      liveTicket.id,
       selectedStatus,
       adminResponseMessage.trim(),
-      'Raden Azhar Fadhlur Rohman',
+      currentUser.name || 'Raden Azhar Fadhlur Rohman',
       'IT Support'
     );
 
@@ -142,7 +187,11 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
 
     setAdminResponseMessage('');
     setSelectedStatus('');
-    setTimeout(() => setSuccessToast(null), 4500);
+    setTimeout(() => {
+      fetchLiveTicket(true);
+      setSuccessToast(null);
+    }, 4500);
+    setTimeout(() => fetchLiveTicket(true), 800);
   };
 
   // Submit Handler for User Response (USER NEVER CHANGES TICKET STATUS)
@@ -156,32 +205,40 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
     setUserError(null);
     // User replies: status of the ticket DOES NOT CHANGE! Only admin can change status.
     onUpdateTicket?.(
-      ticket.id,
-      ticket.status as 'Solved' | 'In progress' | 'Return',
+      liveTicket.id,
+      liveTicket.status as 'Solved' | 'In progress' | 'Return',
       userResponseMessage.trim(),
-      ticket.requester || 'Damar Pratama',
+      currentUser.name || liveTicket.requester || 'Damar Pratama',
       'User'
     );
 
     setSuccessToast('Balasan Anda berhasil dikirim ke IT Support.');
     setUserResponseMessage('');
-    setTimeout(() => setSuccessToast(null), 4500);
+    setTimeout(() => {
+      fetchLiveTicket(true);
+      setSuccessToast(null);
+    }, 4500);
+    setTimeout(() => fetchLiveTicket(true), 800);
   };
 
   // Direct "Mark as Solved" Button by Admin
   const handleDirectMarkSolved = () => {
     const note = solvedNote.trim() || 'Permasalahan telah berhasil diselesaikan oleh tim IT Support.';
     onUpdateTicket?.(
-      ticket.id,
+      liveTicket.id,
       'Solved',
       note,
-      'Raden Azhar Fadhlur Rohman',
+      currentUser.name || 'Raden Azhar Fadhlur Rohman',
       'IT Support'
     );
     setShowSolvedConfirm(false);
     setSolvedNote('');
     setSuccessToast('Tiket telah resmi ditandai "Solved". Timeline progres kini telah selesai.');
-    setTimeout(() => setSuccessToast(null), 4500);
+    setTimeout(() => {
+      fetchLiveTicket(true);
+      setSuccessToast(null);
+    }, 4500);
+    setTimeout(() => fetchLiveTicket(true), 800);
   };
 
   return (
@@ -236,9 +293,19 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
           {/* Ticket Title and Status Badge */}
           <div className="flex items-center flex-wrap gap-3.5 mt-1">
             <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
-              {ticket.subject}
+              {liveTicket.subject}
             </h1>
-            <Badge status={ticket.status} />
+            <Badge status={liveTicket.status} />
+            <button
+              type="button"
+              onClick={() => fetchLiveTicket(false)}
+              disabled={isRefreshing}
+              title="Segarkan data tiket langsung dari database"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-[#64748B] hover:text-[#2563EB] bg-white hover:bg-blue-50 border border-slate-200/80 rounded-full shadow-xs transition-all cursor-pointer ml-auto sm:ml-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#2563EB]' : ''}`} />
+              <span>{isRefreshing ? 'Menyegarkan...' : 'Refresh'}</span>
+            </button>
           </div>
         </div>
 
@@ -276,7 +343,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     Requester
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {ticket.requester || 'Raden Azhar Fadhlur Rohman'}
+                    {liveTicket.requester || 'Raden Azhar Fadhlur Rohman'}
                   </div>
                 </div>
 
@@ -286,7 +353,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     NIK
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {ticket.nik || '231270322'}
+                    {liveTicket.nik || '231270322'}
                   </div>
                 </div>
 
@@ -296,7 +363,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     Departement
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {ticket.department || 'Information Technology'}
+                    {liveTicket.department || 'Information Technology'}
                   </div>
                 </div>
 
@@ -306,7 +373,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     Ticket category
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {ticket.subcategory || ticket.category}
+                    {liveTicket.subcategory || liveTicket.category}
                   </div>
                 </div>
 
@@ -316,7 +383,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     Group category
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A] uppercase">
-                    {ticket.category}
+                    {liveTicket.category}
                   </div>
                 </div>
 
@@ -336,7 +403,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     Submitted
                   </div>
                   <div className="text-[13.5px] font-bold text-[#0F172A]">
-                    {ticket.submitted}
+                    {liveTicket.submitted}
                   </div>
                 </div>
               </div>
@@ -350,7 +417,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                   Description
                 </div>
                 <p className="text-[13.5px] leading-[22px] text-[#1E293B] whitespace-pre-wrap">
-                  {ticket.description || '[Ticket description from the user]'}
+                  {liveTicket.description || '[Ticket description from the user]'}
                 </p>
               </div>
             </Card>
@@ -423,7 +490,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                   <div>
                     <div className="font-bold text-[13.5px]">Tiket Telah Selesai (Solved)</div>
                     <div className="text-[12px] text-green-700 mt-0.5">
-                      Penanganan tiket ini telah tuntas diselesaikan oleh {ticket.handler || 'IT Support'}. Form respon ditutup.
+                      Penanganan tiket ini telah tuntas diselesaikan oleh {liveTicket.handler || 'IT Support'}. Form respon ditutup.
                     </div>
                   </div>
                 </div>
@@ -433,7 +500,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                   <div>
                     <div className="font-bold text-[13.5px]">Tiket Telah Ditolak (Rejected)</div>
                     <div className="text-[12px] text-rose-700 mt-0.5">
-                      Tiket ini ditolak oleh {ticket.handler || 'IT Support'} dan telah ditutup permanen. Form respon ditutup.
+                      Tiket ini ditolak oleh {liveTicket.handler || 'IT Support'} dan telah ditutup permanen. Form respon ditutup.
                     </div>
                   </div>
                 </div>
@@ -566,7 +633,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                   <div className="bg-[#FEF5E7] border border-[#C97D0C]/30 rounded-[14px] p-3.5 text-[#C97D0C]">
                     <div className="flex items-center gap-2 font-bold text-[13.5px]">
                       <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span>Menunggu Tanggapan Pemohon ({ticket.requester || 'Damar Pratama'})</span>
+                      <span>Menunggu Tanggapan Pemohon ({liveTicket.requester || 'Damar Pratama'})</span>
                     </div>
                   </div>
                 )
@@ -712,7 +779,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                       Open ticket
                     </div>
                     <div className="text-[11px] text-[#64748B] mt-0.5">
-                      {ticket.submitted}
+                      {liveTicket.submitted}
                     </div>
                   </div>
                 </div>
@@ -772,11 +839,11 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     </div>
                     <div className="text-[11px] text-[#64748B] mt-0.5">
                       {isSolved
-                        ? ticket.submitted
+                        ? liveTicket.submitted
                         : isReject
                         ? 'Tiket ditolak oleh IT Support'
                         : isInProgress
-                        ? ticket.submitted
+                        ? liveTicket.submitted
                         : isReturn
                         ? 'Perlu tindakan / revisi dari pemohon'
                         : 'Menunggu tindakan awal IT Support'}
@@ -813,9 +880,9 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                     </div>
                     <div className="text-[11px] text-[#64748B] mt-0.5">
                       {isSolved
-                        ? `by ${ticket.handler || 'Raden Azhar Fadhlur Rohman'}`
+                        ? `by ${liveTicket.handler || 'Raden Azhar Fadhlur Rohman'}`
                         : isReject
-                        ? `Ditolak oleh ${ticket.handler || 'IT Support'}`
+                        ? `Ditolak oleh ${liveTicket.handler || 'IT Support'}`
                         : 'Waiting for resolution'}
                     </div>
                   </div>
@@ -843,69 +910,71 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
                 Handled by
               </div>
               <div className="text-[14.5px] font-bold text-[#0F172A] mt-1">
-                {ticket.handler || 'Raden Azhar Fadhlur Rohman'}
+                {liveTicket.handler || 'Belum Ditugaskan (Awaiting Assignment)'}
               </div>
             </div>
 
             {/* Card 3: Attachments */}
             <Card radius="xl" className="p-6 md:p-7 bg-white shadow-sm border border-slate-200/70">
-              <h2 className="text-[16px] leading-[24px] font-bold text-[#0F172A] mb-4">
-                Attachments
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[16px] leading-[24px] font-bold text-[#0F172A]">
+                  Attachments
+                </h2>
+                {liveTicket.attachments && liveTicket.attachments.length > 0 && (
+                  <span className="text-[11px] font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                    {liveTicket.attachments.length} berkas
+                  </span>
+                )}
+              </div>
 
               <div className="space-y-3">
-                {ticket.attachments && ticket.attachments.length > 0 ? (
-                  ticket.attachments.map((att) => (
+                {liveTicket.attachments && liveTicket.attachments.length > 0 ? (
+                  liveTicket.attachments.map((att) => (
                     <div
                       key={att.id}
-                      className="border border-[#E2E8F0] rounded-[16px] p-4 flex items-center justify-between bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
+                      className="border border-[#E2E8F0] rounded-[16px] p-4 flex items-center justify-between bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
                         <div className="w-[38px] h-[38px] rounded-[10px] bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2563EB] flex-shrink-0">
                           <FileText className="w-5 h-5" />
                         </div>
-                        <div>
-                          <div className="text-[12.5px] font-bold text-[#0F172A] truncate max-w-[120px]">
+                        <div className="min-w-0">
+                          <div
+                            className="text-[12.5px] font-bold text-[#0F172A] truncate max-w-[150px] sm:max-w-[190px]"
+                            title={att.name}
+                          >
                             {att.name}
                           </div>
                           <div className="text-[11px] text-[#64748B]">
-                            {att.size}
+                            {att.size || 'Dokumen'}
                           </div>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => alert(`Mengunduh berkas ${att.name}`)}
-                        className="text-[12.5px] font-bold text-[#2563EB] hover:text-[#1d4ed8] hover:underline cursor-pointer px-1 py-1 flex-shrink-0"
-                      >
-                        Download
-                      </button>
+                      {att.url ? (
+                        <a
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={att.name}
+                          className="text-[12.5px] font-bold text-[#2563EB] hover:text-[#1d4ed8] hover:underline cursor-pointer px-2 py-1 flex-shrink-0"
+                        >
+                          Download
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => alert(`Mengunduh berkas ${att.name}`)}
+                          className="text-[12.5px] font-bold text-[#2563EB] hover:text-[#1d4ed8] hover:underline cursor-pointer px-2 py-1 flex-shrink-0"
+                        >
+                          Download
+                        </button>
+                      )}
                     </div>
                   ))
                 ) : (
-                  <div className="border border-[#E2E8F0] rounded-[16px] p-4 flex items-center justify-between bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-[38px] h-[38px] rounded-[10px] bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2563EB] flex-shrink-0">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="text-[12.5px] font-bold text-[#0F172A]">
-                          [file-name.png]
-                        </div>
-                        <div className="text-[11px] text-[#64748B]">
-                          [Size]
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => alert('Mengunduh berkas lampiran')}
-                      className="text-[12.5px] font-bold text-[#2563EB] hover:text-[#1d4ed8] hover:underline cursor-pointer px-1 py-1 flex-shrink-0"
-                    >
-                      Download
-                    </button>
+                  <div className="border border-dashed border-slate-200 rounded-[16px] p-5 text-center text-[#94A3B8] text-[12.5px] bg-slate-50/50">
+                    Tidak ada berkas lampiran pada tiket ini
                   </div>
                 )}
               </div>

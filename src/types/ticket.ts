@@ -17,10 +17,11 @@ export interface TicketRequestItem {
   submitted: string;
   status: 'Solved' | 'In progress' | 'Waiting' | 'Return' | 'Pending' | 'Open' | 'Reject' | 'Rejected' | 'On Process';
   handler?: string;
+  handler_nik?: string;
   requester?: string;
   nik?: string;
   department?: string;
-  attachments?: { id: string; name: string; size: string }[];
+  attachments?: { id: string; name: string; size: string; path?: string; url?: string }[];
   responses?: TicketResponseItem[];
 }
 

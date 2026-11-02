@@ -32,6 +32,7 @@ Route::middleware('api.key')->group(function () {
     Route::get('/tickets/{no_tiket}', [TicketController::class, 'show']);
     Route::post('/tickets', [TicketController::class, 'store']);
     Route::post('/tickets/{no_tiket}/responses', [TicketController::class, 'addResponse']);
+    Route::post('/tickets/{no_tiket}/attachments', [TicketController::class, 'uploadAttachment']);
 
     // Categories Management
     Route::get('/categories', [CategoryController::class, 'index']);

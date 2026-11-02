@@ -84,6 +84,7 @@ function App() {
     description: string;
     groupId?: number;
     categoryId?: number;
+    attachments?: { id: string; name: string; size: string; path?: string; url?: string }[];
     dataform?: any;
   }) => {
     // 1. Refresh tiket terbaru dari Backend Laravel
@@ -115,6 +116,7 @@ function App() {
       requester: currentUser?.name || 'Raden Azhar Fadhlur',
       nik: currentUser?.nik || '231270322',
       department: currentUser?.department || 'Information Technology',
+      attachments: newTicket.attachments,
     };
 
     setTickets((prev) => [

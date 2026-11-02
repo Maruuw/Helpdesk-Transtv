@@ -26,6 +26,7 @@ interface CreateTicketPageProps {
     description: string;
     groupId?: number;
     categoryId?: number;
+    attachments?: { id: string; name: string; size: string; path?: string; url?: string }[];
     dataform?: {
       disetujui: string;
       pembuatan: string;
@@ -44,6 +45,7 @@ interface UploadedFileItem {
   id: string;
   name: string;
   size: string;
+  file?: File;
 }
 
 export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
@@ -180,6 +182,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
         id: `${Date.now()}-${idx}`,
         name: file.name,
         size: `${(file.size / 1024).toFixed(1)} KB`,
+        file: file,
       }));
       setAttachments((prev) => [...prev, ...newFiles]);
     }
@@ -230,6 +233,10 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
         }
       : undefined;
 
+    const rawFiles: File[] = attachments
+      .map((a) => a.file)
+      .filter((f): f is File => !!f);
+
     try {
       await helpdeskApi.createTicket({
         subject,
@@ -238,6 +245,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
         id_group: currentGroupObj?.id,
         tiketkategori_id: currentCategoryObj?.id,
         dataform: dataformPayload,
+        attachments: rawFiles,
       });
     } catch (err) {
       console.warn('API createTicket error, fallback lokal:', err);
@@ -262,6 +270,11 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
       description,
       groupId: currentGroupObj?.id,
       categoryId: currentCategoryObj?.id,
+      attachments: attachments.map((a) => ({
+        id: a.id,
+        name: a.name,
+        size: a.size,
+      })),
       dataform: isSpecialSoftwareForm
         ? {
             disetujui: 'ya',

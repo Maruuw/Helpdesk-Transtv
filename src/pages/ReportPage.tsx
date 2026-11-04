@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Sidebar } from '@/components/layout';
+import { Sidebar, AppHeader } from '@/components/layout';
 import type { AppView } from '@/App';
 import {
   ChevronDown,
@@ -161,6 +161,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
   onNavigate,
   onLogout,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Live Report dataset from MySQL Database
   const [reportData, setReportData] = useState<ReportItem[]>(INITIAL_REPORT_DATA);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -332,41 +333,28 @@ export const ReportPage: React.FC<ReportPageProps> = ({
         activeItem="report"
         userRole={currentUser.role}
         onLogout={onLogout}
+        currentUser={currentUser}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onOpenMobile={() => setIsMobileMenuOpen(true)}
         onNavigate={onNavigate}
       />
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 h-screen overflow-y-auto px-6 py-6 md:px-8 md:py-7 flex flex-col gap-6 custom-scrollbar">
-        {/* Top Header Row: Logo Helpdesk on Left, User Badge on Right */}
-        <div className="flex items-center justify-between flex-shrink-0">
-          <img
-            src="/assets/helpdesk.png"
-            alt="Helpdesk Logo"
-            className="h-[42px] md:h-[48px] w-auto object-contain select-none"
-          />
-
-          {/* User Badge */}
-          <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
-              {currentUser.name
-                .split(' ')
-                .map((n) => n[0])
-                .slice(0, 2)
-                .join('')}
-            </div>
-            <span className="text-[13px] font-semibold text-[#1E293B]">
-              {currentUser.name}
-            </span>
-          </div>
-        </div>
+      <main className="flex-1 h-screen overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-7 pb-24 lg:pb-8 flex flex-col gap-5 sm:gap-6 custom-scrollbar">
+        {/* Top Header */}
+        <AppHeader
+          currentUser={currentUser}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Page Title & Refresh */}
-        <div className="flex items-center justify-between flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-shrink-0">
           <div>
-            <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
+            <h1 className="text-[22px] sm:text-[26px] md:text-[30px] leading-[30px] sm:leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
               Report
             </h1>
-            <p className="text-[13px] text-slate-500 mt-0.5">
+            <p className="text-[12.5px] sm:text-[13px] text-slate-500 mt-0.5">
               Laporan data tiket historis dan berjalan dari database Helpdesk TRANS TV.
             </p>
           </div>
@@ -375,7 +363,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
             type="button"
             onClick={fetchReportData}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[12.5px] font-bold text-[#153F85] shadow-sm transition-all cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[12.5px] font-bold text-[#153F85] shadow-sm transition-all cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh Data
@@ -398,18 +386,30 @@ export const ReportPage: React.FC<ReportPageProps> = ({
           </div>
         )}
 
+        {/* Invisible Backdrop to close filter dropdowns when clicking outside */}
+        {(isGroupDropdownOpen || isYearDropdownOpen || isMonthDropdownOpen) && (
+          <div
+            className="fixed inset-0 z-20"
+            onClick={() => {
+              setIsGroupDropdownOpen(false);
+              setIsYearDropdownOpen(false);
+              setIsMonthDropdownOpen(false);
+            }}
+          />
+        )}
+
         {/* ================= REPORT CARD CONTAINER ================= */}
-        <div className="bg-white rounded-[32px] p-6 md:p-8 shadow-sm border border-slate-200/80 flex flex-col gap-6">
+        <div className="bg-white rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 md:p-8 shadow-sm border border-slate-200/80 flex flex-col gap-6 relative z-10">
           {/* Top Control Bar: Filters on Left, Export & Search on Right */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-[13px] font-semibold text-slate-700 mr-1 flex items-center gap-1.5">
+            {/* Filter Pills - Horizontal slider on mobile, neat row with visible overflow on desktop */}
+            <div className="flex items-center gap-2.5 overflow-x-auto sm:overflow-visible no-scrollbar pb-1 sm:pb-0 flex-nowrap sm:flex-wrap shrink-0 max-w-full relative z-20">
+              <span className="text-[13px] font-semibold text-slate-700 mr-1 shrink-0 flex items-center gap-1.5">
                 Filter By
               </span>
 
               {/* Group Filter Dropdown Pill (5 Database Groups) */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -419,12 +419,29 @@ export const ReportPage: React.FC<ReportPageProps> = ({
                   }}
                   className="flex items-center gap-2 bg-white border border-slate-300 hover:border-slate-400 px-3.5 py-1.5 rounded-full text-[13px] font-medium text-slate-700 shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#0C3E7E]"
                 >
-                  <span>{selectedGroup}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="whitespace-nowrap">{selectedGroup}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 </button>
 
+                {/* Native select overlay on mobile for perfect non-clipping picker */}
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => {
+                    setSelectedGroup(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="sm:hidden absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                  aria-label="Pilih Group"
+                >
+                  {GROUPS_LIST.map((grp) => (
+                    <option key={grp} value={grp}>
+                      {grp}
+                    </option>
+                  ))}
+                </select>
+
                 {isGroupDropdownOpen && (
-                  <div className="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="hidden sm:block absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                     {GROUPS_LIST.map((grp) => (
                       <button
                         key={grp}
@@ -447,7 +464,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
               </div>
 
               {/* Years Filter Dropdown Pill */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -457,12 +474,29 @@ export const ReportPage: React.FC<ReportPageProps> = ({
                   }}
                   className="flex items-center gap-2 bg-white border border-slate-300 hover:border-slate-400 px-3.5 py-1.5 rounded-full text-[13px] font-medium text-slate-700 shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#0C3E7E]"
                 >
-                  <span>{selectedYear}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="whitespace-nowrap">{selectedYear}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 </button>
 
+                {/* Native select overlay on mobile */}
+                <select
+                  value={selectedYear}
+                  onChange={(e) => {
+                    setSelectedYear(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="sm:hidden absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                  aria-label="Pilih Tahun"
+                >
+                  {YEARS_LIST.map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr}
+                    </option>
+                  ))}
+                </select>
+
                 {isYearDropdownOpen && (
-                  <div className="absolute left-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="hidden sm:block absolute left-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                     {YEARS_LIST.map((yr) => (
                       <button
                         key={yr}
@@ -485,7 +519,7 @@ export const ReportPage: React.FC<ReportPageProps> = ({
               </div>
 
               {/* Month Filter Dropdown Pill */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -495,12 +529,29 @@ export const ReportPage: React.FC<ReportPageProps> = ({
                   }}
                   className="flex items-center gap-2 bg-white border border-slate-300 hover:border-slate-400 px-3.5 py-1.5 rounded-full text-[13px] font-medium text-slate-700 shadow-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#0C3E7E]"
                 >
-                  <span>{selectedMonth}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="whitespace-nowrap">{selectedMonth}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 </button>
 
+                {/* Native select overlay on mobile */}
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => {
+                    setSelectedMonth(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="sm:hidden absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                  aria-label="Pilih Bulan"
+                >
+                  {MONTHS_LIST.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+
                 {isMonthDropdownOpen && (
-                  <div className="absolute left-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                  <div className="hidden sm:block absolute left-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-30 py-1 text-[13px] max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
                     {MONTHS_LIST.map((m) => (
                       <button
                         key={m}

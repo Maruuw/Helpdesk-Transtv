@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Sidebar } from '@/components/layout';
+import { Sidebar, AppHeader } from '@/components/layout';
 import { Card } from '@/components/ui';
 import {
   ChevronDown,
@@ -72,6 +72,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
   onNavigate,
   onLogout,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Category table list state
   const [categories, setCategories] = useState<CategoryItem[]>(buildInitialCategories);
   const [groups, setGroups] = useState<DbGroupItem[]>(DB_GROUPS);
@@ -268,41 +269,28 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
         activeItem="master-category"
         userRole={currentUser.role}
         onLogout={onLogout}
+        currentUser={currentUser}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onOpenMobile={() => setIsMobileMenuOpen(true)}
         onNavigate={onNavigate}
       />
 
       {/* ================= RIGHT MAIN CONTENT ================= */}
-      <main className="flex-1 h-screen overflow-y-auto px-6 md:px-10 py-6 pb-16 custom-scrollbar flex flex-col">
-        {/* Top Header with Helpdesk Brand & Profile */}
-        <div className="flex items-center justify-between mb-7 flex-shrink-0">
-          <img
-            src="/assets/helpdesk.png"
-            alt="Helpdesk Logo"
-            className="h-[42px] md:h-[48px] w-auto object-contain select-none"
-          />
-
-          {/* User Profile Pill */}
-          <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[32px] h-[32px] rounded-full bg-[#E0E7FF] text-[#1E3A8A] font-bold text-[12px] flex items-center justify-center uppercase">
-              {currentUser.name
-                .split(' ')
-                .map((n) => n[0])
-                .slice(0, 2)
-                .join('')}
-            </div>
-            <span className="text-[13px] font-semibold text-[#1E293B]">
-              {currentUser.name}
-            </span>
-          </div>
-        </div>
+      <main className="flex-1 h-screen overflow-y-auto px-4 py-5 sm:px-6 md:px-10 pb-24 lg:pb-16 custom-scrollbar flex flex-col">
+        {/* Top Header */}
+        <AppHeader
+          currentUser={currentUser}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Page Title & Refresh */}
-        <div className="mb-6 flex items-center justify-between flex-shrink-0">
+        <div className="my-5 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-shrink-0">
           <div>
-            <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0B2347] tracking-[-0.5px]">
+            <h1 className="text-[22px] sm:text-[26px] md:text-[30px] leading-[30px] sm:leading-[36px] font-extrabold text-[#0B2347] tracking-[-0.5px]">
               Master Category & Groups
             </h1>
-            <p className="text-[13px] text-slate-500 mt-0.5">
+            <p className="text-[12.5px] sm:text-[13px] text-slate-500 mt-0.5">
               Kelola master kategori tiket dan penugasan group penanganan IT.
             </p>
           </div>
@@ -311,7 +299,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
             type="button"
             onClick={fetchCategoriesFromApi}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[12.5px] font-bold text-[#153F85] shadow-sm transition-all cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[12.5px] font-bold text-[#153F85] shadow-sm transition-all cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh Data
@@ -439,18 +427,29 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
           </form>
         </Card>
 
+        {/* Invisible Backdrop to close filter dropdowns when clicking outside */}
+        {(isFilterGroupOpen || isFilterTypeOpen) && (
+          <div
+            className="fixed inset-0 z-20"
+            onClick={() => {
+              setIsFilterGroupOpen(false);
+              setIsFilterTypeOpen(false);
+            }}
+          />
+        )}
+
         {/* ================= CARD 2: CATEGORY LIST & TABLE ================= */}
-        <Card radius="xl" className="p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-8 flex-shrink-0">
+        <Card radius="xl" className="p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-8 flex-shrink-0 relative z-10">
           {/* Controls: Filter & Search */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6 flex-shrink-0">
-            {/* Left: Filters */}
-            <div className="flex items-center flex-wrap gap-2.5">
-              <span className="text-[13px] font-bold text-[#0F172A] mr-1">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 flex-shrink-0">
+            {/* Left: Filters - Horizontal slider on mobile, neat row with visible overflow on desktop */}
+            <div className="flex items-center gap-2.5 overflow-x-auto sm:overflow-visible no-scrollbar pb-1 sm:pb-0 flex-nowrap sm:flex-wrap max-w-full relative z-20">
+              <span className="text-[13px] font-bold text-[#0F172A] mr-1 shrink-0">
                 Filter:
               </span>
 
               {/* Pill 1: Group Filter */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -463,12 +462,27 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                       : 'border-slate-300 hover:border-slate-400 text-[#0F172A] bg-white'
                   }`}
                 >
-                  <span>{filterGroup === 'All' ? 'Semua Group' : filterGroup}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-[#64748B]" />
+                  <span className="whitespace-nowrap">{filterGroup === 'All' ? 'Semua Group' : filterGroup}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
                 </button>
 
+                {/* Native select overlay on mobile */}
+                <select
+                  value={filterGroup}
+                  onChange={(e) => setFilterGroup(e.target.value)}
+                  className="sm:hidden absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                  aria-label="Pilih Group"
+                >
+                  <option value="All">Semua Group ({categories.length})</option>
+                  {groups.map((grp) => (
+                    <option key={grp.id} value={grp.name}>
+                      {grp.name} ({categories.filter((c) => c.group === grp.name).length})
+                    </option>
+                  ))}
+                </select>
+
                 {isFilterGroupOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 w-60 bg-white border border-slate-200 rounded-[14px] shadow-lg z-20 py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="hidden sm:block absolute left-0 top-full mt-1.5 w-60 bg-white border border-slate-200 rounded-[14px] shadow-lg z-30 py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                     <button
                       type="button"
                       onClick={() => {
@@ -501,7 +515,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
               </div>
 
               {/* Pill 2: Form Type Filter */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -514,18 +528,30 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
                       : 'border-slate-300 hover:border-slate-400 text-[#0F172A] bg-white'
                   }`}
                 >
-                  <span>
+                  <span className="whitespace-nowrap">
                     {filterType === 'All'
                       ? 'Tipe Form'
                       : filterType === 'Form'
                       ? 'Form Aplikasi'
                       : 'Standar'}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-[#64748B]" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
                 </button>
 
+                {/* Native select overlay on mobile */}
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="sm:hidden absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                  aria-label="Pilih Tipe Form"
+                >
+                  <option value="All">Semua Tipe Form</option>
+                  <option value="Form">Form Aplikasi (12 Kategori)</option>
+                  <option value="Standard">Kategori Standar</option>
+                </select>
+
                 {isFilterTypeOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 w-52 bg-white border border-slate-200 rounded-[14px] shadow-lg z-20 py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="hidden sm:block absolute left-0 top-full mt-1.5 w-52 bg-white border border-slate-200 rounded-[14px] shadow-lg z-30 py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                     <button
                       type="button"
                       onClick={() => {
@@ -562,7 +588,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
             </div>
 
             {/* Right: Search Bar */}
-            <div className="relative w-full md:w-[280px]">
+            <div className="relative w-full sm:w-[280px] sm:ml-auto xl:ml-0 shrink-0">
               <Search className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
@@ -576,7 +602,7 @@ export const MasterCategoryPage: React.FC<MasterCategoryPageProps> = ({
 
           {/* Table Container */}
           <div className="overflow-x-auto rounded-[16px] border border-slate-200/80">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[650px] text-left border-collapse">
               <thead>
                 <tr className="bg-[#E2E8F0]/70 border-b border-slate-200">
                   <th className="py-3.5 px-4 text-[12px] font-bold text-[#0F172A] w-[70px]">

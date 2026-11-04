@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Input } from '@/components/ui';
-import { Eye, EyeOff, Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, Info } from 'lucide-react';
 import { helpdeskApi } from '@/services/api';
 
 export interface AuthUser {
@@ -12,9 +12,10 @@ export interface AuthUser {
 
 interface LoginPageProps {
   onLoginSuccess?: (user: AuthUser) => void;
+  redirectHint?: string;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, redirectHint }) => {
   const [nik, setNik] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -121,7 +122,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       )}
 
       {/* ================= LEFT HALF: FULLSCREEN POSTER & BINDER SEAM ================= */}
-      <div className="relative w-full md:w-1/2 h-[45vh] md:h-full bg-black flex items-center justify-center overflow-hidden flex-shrink-0 p-1 md:p-2">
+      <div className="relative w-full md:w-1/2 h-[220px] sm:h-[300px] md:h-full bg-black flex items-center justify-center overflow-hidden flex-shrink-0 p-1 md:p-2">
         {/* Full poster scaled up slightly and shifted down to give crown breathing room */}
         <img
           src="/assets/welcome_banner.png"
@@ -164,7 +165,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       </div>
 
       {/* ================= RIGHT HALF: FULLSCREEN LOGIN FORM ================= */}
-      <div className="relative w-full md:w-1/2 h-[55vh] md:h-full bg-white px-8 sm:px-14 md:px-16 lg:px-24 py-8 md:py-12 flex flex-col justify-between overflow-y-auto">
+      <div className="relative w-full md:w-1/2 flex-1 md:h-full bg-white px-6 sm:px-12 md:px-14 lg:px-20 py-6 md:py-12 flex flex-col justify-between overflow-y-auto">
         
         {/* Subtle geometric light-gray facet accent at bottom right */}
         <div 
@@ -180,15 +181,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <img
             src="/assets/helpdesk.png"
             alt="Helpdesk Logo"
-            className="h-12 sm:h-14 md:h-16 lg:h-[64px] w-auto object-contain drop-shadow-sm select-none transition-all duration-200"
+            className="h-10 sm:h-12 md:h-14 lg:h-[60px] w-auto object-contain drop-shadow-sm select-none transition-all duration-200"
           />
         </div>
 
         {/* Center: Form Area */}
-        <div className="w-full max-w-[420px] mx-auto my-auto z-10 py-6">
-          <h1 className="text-[28px] sm:text-[34px] font-extrabold text-[#0F172A] tracking-[-0.75px] mb-8 leading-tight">
+        <div className="w-full max-w-[420px] mx-auto my-auto z-10 py-4 sm:py-6">
+          <h1 className="text-[24px] sm:text-[30px] md:text-[34px] font-extrabold text-[#0F172A] tracking-[-0.75px] mb-6 sm:mb-8 leading-tight">
             Login Account HelpDesk
           </h1>
+
+          {/* Deep-link Redirect Hint (misal dari link WhatsApp) */}
+          {redirectHint && (
+            <div className="mb-5 p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-[#153F85] flex items-center gap-2.5 animate-in fade-in duration-200">
+              <Info className="w-4 h-4 flex-shrink-0 text-[#2563EB]" />
+              <div className="text-[12.5px] font-medium leading-[18px]">
+                {redirectHint}
+              </div>
+            </div>
+          )}
 
           {/* Negative Case Alert (Merah) */}
           {error?.general && (

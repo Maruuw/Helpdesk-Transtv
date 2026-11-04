@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Sidebar } from '@/components/layout';
+import { Sidebar, AppHeader } from '@/components/layout';
 import { Card, Badge, Button } from '@/components/ui';
 import type { TicketRequestItem } from './DashboardPage';
 import { Plus, Search, AlertCircle } from 'lucide-react';
@@ -35,6 +35,7 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
   onCreateTicket,
   onSelectTicket,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -81,37 +82,28 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
         activeItem="my-tickets"
         userRole={currentUser.role}
         onLogout={onLogout}
+        currentUser={currentUser}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onOpenMobile={() => setIsMobileMenuOpen(true)}
         onNavigate={onNavigate}
       />
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 h-screen overflow-y-auto px-6 py-6 md:px-8 md:py-7 flex flex-col gap-6 custom-scrollbar">
-        {/* Top Header Row: Logo Helpdesk on Left, User Badge on Right */}
-        <div className="flex items-center justify-between flex-shrink-0">
-          <img
-            src="/assets/helpdesk.png"
-            alt="Helpdesk Logo"
-            className="h-[42px] md:h-[48px] w-auto object-contain select-none"
-          />
+      <main className="flex-1 h-screen overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-7 pb-24 lg:pb-8 flex flex-col gap-5 sm:gap-6 custom-scrollbar">
+        {/* Top Header */}
+        <AppHeader
+          currentUser={currentUser}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
-          {/* User Badge */}
-          <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
-              {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-            </div>
-            <span className="text-[13px] font-semibold text-[#1E293B]">
-              {currentUser.name}
-            </span>
-          </div>
-        </div>
-
-        {/* Page Title & Subtitle with Create New Ticket Button aligned to the right (di ujung) */}
-        <div className="flex items-center justify-between gap-4 flex-shrink-0">
+        {/* Page Title & Subtitle with Create New Ticket Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
           <div>
-            <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
+            <h1 className="text-[22px] sm:text-[26px] md:text-[30px] leading-[30px] sm:leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
               {currentUser.role === 'admin' ? 'Semua Tiket Helpdesk' : 'Daftar Tiket Saya'}
             </h1>
-            <p className="text-[13px] leading-[20px] text-[#64748B] mt-0.5">
+            <p className="text-[12.5px] sm:text-[13px] leading-[18px] sm:leading-[20px] text-[#64748B] mt-0.5">
               {currentUser.role === 'admin'
                 ? 'Seluruh antrean laporan tiket yang masuk ke sistem TI TRANS TV.'
                 : 'Daftar seluruh laporan tiket yang telah Anda ajukan, terbaru di atas.'}
@@ -122,30 +114,30 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
           <Button
             variant="primary-form"
             onClick={onCreateTicket}
-            leftIcon={<Plus className="w-4 h-4 text-white" />}
-            className="py-[10px] px-[22px] text-[13px] font-bold bg-[#153F85] hover:bg-[#0e2c5e] text-white rounded-full shadow-sm flex-shrink-0"
+            leftIcon={<Plus className="w-3.5 h-3.5 text-white" />}
+            className="w-fit sm:w-auto py-2 sm:py-[10px] px-4 sm:px-[22px] text-[12px] sm:text-[13px] font-bold bg-[#153F85] hover:bg-[#0e2c5e] text-white rounded-full shadow-sm flex-shrink-0 self-start sm:self-auto"
           >
             Create New Ticket
           </Button>
         </div>
 
         {/* Main Card: Filter Pills, Search Bar, and Full Tickets Table */}
-        <Card radius="xl" className="p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-6 flex-1 flex flex-col min-h-0">
+        <Card radius="xl" className="p-4 sm:p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-6 flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Top Controls: Filter Tabs & Search */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6 flex-shrink-0">
-            {/* Filter Pills */}
-            <div className="flex items-center flex-wrap gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6 flex-shrink-0">
+            {/* Filter Pills - Smooth Horizontal Slider Track */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 flex-nowrap max-w-full">
               {/* All */}
               <button
                 type="button"
                 onClick={() => setActiveFilter('All')}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   activeFilter === 'All'
                     ? 'bg-[#0F2D60] text-white shadow-sm'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-[#64748B]'
                 }`}
               >
-                <span>All</span>
+                <span className="whitespace-nowrap">All</span>
                 <span
                   className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
                     activeFilter === 'All' ? 'bg-white/20 text-white' : 'bg-slate-200 text-[#475569]'
@@ -159,13 +151,13 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveFilter('Return')}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   activeFilter === 'Return'
                     ? 'bg-[#0F2D60] text-white shadow-sm'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-[#64748B]'
                 }`}
               >
-                <span>Return</span>
+                <span className="whitespace-nowrap">Return</span>
                 <span
                   className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
                     activeFilter === 'Return' ? 'bg-white/20 text-white' : 'bg-slate-200 text-[#475569]'
@@ -179,13 +171,13 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveFilter('In progress')}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   activeFilter === 'In progress'
                     ? 'bg-[#0F2D60] text-white shadow-sm'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-[#64748B]'
                 }`}
               >
-                <span>In progress</span>
+                <span className="whitespace-nowrap">In progress</span>
                 <span
                   className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
                     activeFilter === 'In progress' ? 'bg-white/20 text-white' : 'bg-slate-200 text-[#475569]'
@@ -199,13 +191,13 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveFilter('Solved')}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   activeFilter === 'Solved'
                     ? 'bg-[#0F2D60] text-white shadow-sm'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-[#64748B]'
                 }`}
               >
-                <span>Solved</span>
+                <span className="whitespace-nowrap">Solved</span>
                 <span
                   className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
                     activeFilter === 'Solved' ? 'bg-white/20 text-white' : 'bg-slate-200 text-[#475569]'
@@ -219,13 +211,13 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveFilter('Reject')}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   activeFilter === 'Reject'
                     ? 'bg-[#DC2626] text-white shadow-sm'
                     : 'bg-slate-100 hover:bg-slate-200/80 text-[#64748B]'
                 }`}
               >
-                <span>Reject</span>
+                <span className="whitespace-nowrap">Reject</span>
                 <span
                   className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
                     activeFilter === 'Reject' ? 'bg-white/20 text-white' : 'bg-slate-200 text-[#475569]'
@@ -237,21 +229,21 @@ export const MyTicketsPage: React.FC<MyTicketsPageProps> = ({
             </div>
 
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative w-full sm:w-[280px] sm:ml-auto xl:ml-0 shrink-0">
               <Search className="w-4 h-4 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search by subject"
+                placeholder="Search by subject..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full md:w-[280px] pl-10 pr-4 py-2 rounded-full text-[13px] text-[#1E293B] border border-[#CBD5E1] bg-white placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm transition-all"
+                className="w-full pl-10 pr-4 py-2 rounded-full text-[13px] text-[#1E293B] border border-[#CBD5E1] bg-white placeholder:text-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] shadow-sm transition-all"
               />
             </div>
           </div>
 
           {/* Full Tickets Table */}
           <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[620px] text-left border-collapse">
               <thead className="sticky top-0 bg-white z-10 shadow-[0_1px_0_0_#f1f5f9]">
                 <tr className="border-b border-slate-100 text-[12px] leading-[18px] font-semibold text-[#64748B]">
                   <th className="pb-3 pl-2 font-semibold w-[44px]">No</th>

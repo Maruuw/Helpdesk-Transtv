@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'portal_url' => env('HELPDESK_PORTAL_URL', 'http://localhost:5173'),
+        'provider' => env('WA_PROVIDER', 'meta'), // 'meta', 'fonnte', 'wablas', 'generic'
+        'token' => env('WA_API_TOKEN', ''),
+        'phone_number_id' => env('WA_PHONE_NUMBER_ID', ''),
+        'verify_token' => env('WA_VERIFY_TOKEN', 'transtv-helpdesk-wa-token-2026'),
+        'gateway_url' => env('WA_GATEWAY_URL', ''),
+    ],
+
 ];

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\WhatsAppController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,9 +21,19 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+// WhatsApp Gateway Endpoints (Meta Cloud API Webhook & Testing Simulation)
+Route::prefix('whatsapp')->group(function () {
+    Route::get('/webhook', [WhatsAppController::class, 'verifyWebhook']);
+    Route::post('/webhook', [WhatsAppController::class, 'handleWebhook']);
+    Route::post('/simulate', [WhatsAppController::class, 'simulate']);
+});
+
 // Protected API Routes (Memerlukan X-API-KEY)
 Route::middleware('api.key')->group(function () {
     
+    // WhatsApp Outbound Notifications (Protected)
+    Route::post('/whatsapp/notify/{no_tiket}', [WhatsAppController::class, 'sendTicketNotification']);
+
     // Dashboard Stats & Analytics
     Route::get('/dashboard/stats', [TicketController::class, 'dashboardStats']);
     Route::get('/reports', [TicketController::class, 'report']);

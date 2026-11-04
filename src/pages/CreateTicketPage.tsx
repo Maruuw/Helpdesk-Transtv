@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Sidebar } from '@/components/layout';
+import { Sidebar, AppHeader } from '@/components/layout';
 import { Button, Card } from '@/components/ui';
 import { ChevronDown, FileText, X, AlertCircle, Plus } from 'lucide-react';
 import { helpdeskApi } from '@/services/api';
@@ -60,6 +60,8 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
   onLogout,
   onNavigate,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Read-only user from Employee Master Data
   const defaultUser = {
     name: currentUser.name,
@@ -296,46 +298,33 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
         activeItem="create-ticket"
         userRole={currentUser.role}
         onLogout={onLogout}
+        currentUser={currentUser}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onOpenMobile={() => setIsMobileMenuOpen(true)}
         onNavigate={onNavigate}
       />
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 h-screen overflow-y-auto px-6 py-6 md:px-8 md:py-7 flex flex-col gap-6 custom-scrollbar">
-        {/* Top Header Row: Logo Helpdesk on Left, User Badge on Right */}
-        <div className="flex items-center justify-between flex-shrink-0">
-          <img
-            src="/assets/helpdesk.png"
-            alt="Helpdesk Logo"
-            className="h-[42px] md:h-[48px] w-auto object-contain select-none"
-          />
-
-          {/* User Badge */}
-          <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-            <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
-              {currentUser.name
-                .split(' ')
-                .map((n) => n[0])
-                .slice(0, 2)
-                .join('')}
-            </div>
-            <span className="text-[13px] font-semibold text-[#1E293B]">
-              {currentUser.name}
-            </span>
-          </div>
-        </div>
+      <main className="flex-1 h-screen overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-7 pb-24 lg:pb-8 flex flex-col gap-5 sm:gap-6 custom-scrollbar">
+        {/* Top Header */}
+        <AppHeader
+          currentUser={currentUser}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Page Title & Subtitle */}
         <div className="flex-shrink-0">
-          <h1 className="text-[24px] md:text-[28px] leading-[34px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
+          <h1 className="text-[22px] sm:text-[25px] md:text-[28px] leading-[30px] sm:leading-[34px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
             Create a new ticket
           </h1>
-          <p className="text-[13px] leading-[20px] text-[#64748B] mt-0.5">
+          <p className="text-[12.5px] sm:text-[13px] leading-[18px] sm:leading-[20px] text-[#64748B] mt-0.5">
             Describe the issue and our team will pick it up.
           </p>
         </div>
 
         {/* Form Container Card */}
-        <Card radius="xl" className="p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-6">
+        <Card radius="xl" className="p-4 sm:p-6 md:p-8 bg-white shadow-sm border border-slate-200/70 mb-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* ROW 1: Read-Only Master Employee Data (User & NIK) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -711,12 +700,12 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
             </div>
 
             {/* Bottom Actions: Cancel & Send ticket */}
-            <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <div className="pt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-slate-100">
               <Button
                 type="button"
                 variant="secondary-form"
                 onClick={onCancel}
-                className="py-[10px] px-[28px] text-[12px] font-bold rounded-full border-[#CBD5E1] text-[#334155] hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-auto py-[11px] px-[28px] text-[12.5px] font-bold rounded-full border-[#CBD5E1] text-[#334155] hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </Button>
@@ -725,7 +714,7 @@ export const CreateTicketPage: React.FC<CreateTicketPageProps> = ({
                 type="submit"
                 variant="primary-form"
                 isLoading={isSubmitting}
-                className="py-[10px] px-[28px] text-[12px] font-bold rounded-full bg-[#153F85] hover:bg-[#0e2c5e] text-white shadow-sm transition-all"
+                className="w-full sm:w-auto py-[11px] px-[28px] text-[12.5px] font-bold rounded-full bg-[#153F85] hover:bg-[#0e2c5e] text-white shadow-sm transition-all"
               >
                 Send ticket
               </Button>

@@ -25,9 +25,29 @@ function App() {
     return null;
   });
 
+  const [pendingDeepLink, setPendingDeepLink] = useState<{
+    view?: AppView;
+    ticketId?: string;
+  } | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const ticketParam = params.get('ticket') || params.get('no_tiket');
+    if (action === 'create-ticket') return { view: 'create-ticket' };
+    if (action === 'my-tickets') return { view: 'my-tickets' };
+    if (ticketParam) return { view: 'ticket-detail', ticketId: ticketParam };
+    return null;
+  });
+
   const [currentView, setCurrentView] = useState<AppView>(() => {
     const saved = localStorage.getItem('helpdesk_user');
-    return saved ? 'dashboard' : 'login';
+    if (!saved) return 'login';
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const ticketParam = params.get('ticket') || params.get('no_tiket');
+    if (action === 'create-ticket') return 'create-ticket';
+    if (action === 'my-tickets') return 'my-tickets';
+    if (ticketParam) return 'ticket-detail';
+    return 'dashboard';
   });
 
   const [tickets, setTickets] = useState<TicketRequestItem[]>(initialLatestRequests);
@@ -52,9 +72,49 @@ function App() {
     };
   }, [currentUser]);
 
+  // Deep-linking: Muat detail tiket otomatis jika URL memiliki parameter ?ticket=... atau ?no_tiket=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ticketParam = params.get('ticket') || params.get('no_tiket');
+    if (ticketParam) {
+      helpdeskApi
+        .getTicketDetail(ticketParam)
+        .then((res) => {
+          if (res.success && res.data) {
+            setSelectedTicket(res.data);
+            if (currentUser) {
+              setCurrentView('ticket-detail');
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn('Gagal memuat detail tiket dari deep-link URL:', err);
+        });
+    }
+  }, [currentUser]);
+
   const handleLoginSuccess = (user: AuthUser) => {
     setCurrentUser(user);
-    setCurrentView('dashboard');
+    if (pendingDeepLink?.view) {
+      if (pendingDeepLink.ticketId) {
+        helpdeskApi
+          .getTicketDetail(pendingDeepLink.ticketId)
+          .then((res) => {
+            if (res.success && res.data) {
+              setSelectedTicket(res.data);
+              setCurrentView('ticket-detail');
+            } else {
+              setCurrentView('dashboard');
+            }
+          })
+          .catch(() => setCurrentView('dashboard'));
+      } else {
+        setCurrentView(pendingDeepLink.view);
+      }
+      setPendingDeepLink(null);
+    } else {
+      setCurrentView('dashboard');
+    }
   };
 
   const handleLogout = () => {
@@ -193,7 +253,18 @@ function App() {
   return (
     <div className="w-full min-h-screen">
       {currentView === 'login' && (
-        <LoginPage onLoginSuccess={handleLoginSuccess} />
+        <LoginPage
+          onLoginSuccess={handleLoginSuccess}
+          redirectHint={
+            pendingDeepLink?.view === 'create-ticket'
+              ? 'Silakan masuk untuk melanjutkan ke formulir Buat Tiket'
+              : pendingDeepLink?.view === 'my-tickets'
+              ? 'Silakan masuk untuk melihat daftar tiket Anda'
+              : pendingDeepLink?.ticketId
+              ? `Silakan masuk untuk melihat status Tiket #${pendingDeepLink.ticketId}`
+              : undefined
+          }
+        />
       )}
 
       {currentView === 'dashboard' && (

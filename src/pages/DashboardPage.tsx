@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/layout';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sidebar, AppHeader } from '@/components/layout';
 import { MetricCard, Badge, Card } from '@/components/ui';
 import { TicketTrendChart } from '@/components/dashboard/TicketTrendChart';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { TicketRequestItem } from '@/types/ticket';
 import { initialLatestRequests } from '@/types/ticket';
 import { helpdeskApi } from '@/services/api';
@@ -47,6 +47,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onSelectTicket,
   tickets = initialLatestRequests,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const metricsSliderRef = useRef<HTMLDivElement>(null);
+
+  const scrollMetrics = (direction: 'left' | 'right') => {
+    if (metricsSliderRef.current) {
+      const scrollAmount = 220;
+      metricsSliderRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   // Live Dashboard Statistics from MySQL Backend API
   const [dbStats, setDbStats] = useState<{
     metrics: {
@@ -112,6 +125,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         activeItem="dashboard"
         userRole={currentUser.role}
         onLogout={onLogout}
+        currentUser={currentUser}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onOpenMobile={() => setIsMobileMenuOpen(true)}
         onNavigate={(item) => {
           if (onNavigate) {
             onNavigate(item);
@@ -124,36 +141,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       />
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 h-screen overflow-y-auto px-6 py-4 md:px-8 md:py-5 flex flex-col gap-4 custom-scrollbar">
+      <main className="flex-1 h-screen overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 pb-24 lg:pb-8 flex flex-col gap-4 custom-scrollbar">
 
-        {/* Top Logo */}
-        <div className="flex items-center justify-between flex-shrink-0">
-          <img
-            src="/assets/helpdesk.png"
-            alt="Helpdesk Logo"
-            className="h-[42px] md:h-[48px] w-auto object-contain select-none"
-          />
-        </div>
+        {/* Responsive Header */}
+        <AppHeader
+          currentUser={currentUser}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Welcome Banner Card */}
-        <div className="relative w-full rounded-[20px] md:rounded-[24px] bg-[#0C3E7E] min-h-[145px] md:min-h-[160px] max-h-[175px] overflow-hidden shadow-sm flex items-center justify-between flex-shrink-0">
+        <div className="relative w-full rounded-[18px] md:rounded-[24px] bg-[#0C3E7E] min-h-[140px] md:min-h-[160px] overflow-hidden shadow-sm flex items-center justify-between flex-shrink-0">
           {/* Banner Graphic Background on Right */}
           <img
             src="/assets/dashboard_banner.png"
             alt="Welcome Banner Graphic"
-            className="absolute right-0 top-0 bottom-0 h-full w-auto object-cover object-right pointer-events-none select-none opacity-90 md:opacity-100"
+            className="absolute right-0 top-0 bottom-0 h-full w-auto object-cover object-right pointer-events-none select-none opacity-40 sm:opacity-90 md:opacity-100"
           />
 
           {/* Left Text Content with Gradient Backdrop to guarantee readability */}
-          <div className="relative z-10 p-5 md:p-6 max-w-[550px] bg-gradient-to-r from-[#0C3E7E] via-[#0C3E7E]/95 to-transparent h-full flex flex-col justify-center">
+          <div className="relative z-10 p-4 sm:p-5 md:p-6 max-w-full sm:max-w-[550px] bg-gradient-to-r from-[#0C3E7E] via-[#0C3E7E]/95 sm:via-[#0C3E7E]/90 to-transparent h-full flex flex-col justify-center">
             <div>
-              <span className="text-[12px] leading-[16px] text-blue-200/90 font-medium tracking-wide">
+              <span className="text-[11.5px] sm:text-[12px] leading-[16px] text-blue-200/90 font-medium tracking-wide">
                 {currentUser.department}
               </span>
-              <h1 className="text-[22px] sm:text-[25px] leading-[30px] font-extrabold text-white tracking-[-0.75px] mt-0.5 mb-0.5">
+              <h1 className="text-[20px] sm:text-[23px] md:text-[25px] leading-[26px] sm:leading-[30px] font-extrabold text-white tracking-[-0.5px] mt-0.5 mb-1">
                 Welcome back, {currentUser.name}!
               </h1>
-              <p className="text-[11.5px] leading-[16px] text-blue-200/75 mb-3">
+              <p className="text-[11px] sm:text-[11.5px] leading-[16px] text-blue-200/75 mb-2.5 sm:mb-3">
                 {currentUser.role === 'admin' ? `${currentUser.department} • IT Admin & Specialist` : currentUser.department}
               </p>
               <button
@@ -168,43 +182,68 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        {/* 5 Metric Cards Row (Termasuk Open Ticket) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 flex-shrink-0">
-          <MetricCard
-            label="Total requests"
-            value={totalCount.toString()}
-            subtitle={currentUser.role === 'admin' ? 'Total all tickets' : 'Submitted by you'}
-            dotColor="blue"
-            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
-          />
-          <MetricCard
-            label="Open"
-            value={openCount.toString()}
-            subtitle={currentUser.role === 'admin' ? 'Awaiting assignment' : 'Waiting pickup'}
-            dotColor="purple"
-            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
-          />
-          <MetricCard
-            label="In progress"
-            value={inProgressCount.toString()}
-            subtitle="Being handled"
-            dotColor="cyan"
-            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
-          />
-          <MetricCard
-            label="Return"
-            value={returnCount.toString()}
-            subtitle="Needs revision"
-            dotColor="orange"
-            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
-          />
-          <MetricCard
-            label="Solved"
-            value={solvedCount.toString()}
-            subtitle="Completed"
-            dotColor="green"
-            className="p-3.5 md:p-4 min-h-[105px] md:min-h-[110px]"
-          />
+        {/* 5 Metric Cards: Horizontal Slider Carousel on Mobile/Tablet (< xl), 5-Column Grid on Desktop (>= xl) */}
+        <div className="relative group/slider w-full flex-shrink-0">
+          {/* Scroll Navigation Arrows (visible on tablet / small desktop) */}
+          <button
+            type="button"
+            onClick={() => scrollMetrics('left')}
+            className="hidden sm:flex xl:hidden absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 border border-slate-200/90 shadow-md items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-white transition-all cursor-pointer"
+            aria-label="Scroll ke kiri"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => scrollMetrics('right')}
+            className="hidden sm:flex xl:hidden absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 border border-slate-200/90 shadow-md items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-white transition-all cursor-pointer"
+            aria-label="Scroll ke kanan"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Swipeable Track */}
+          <div
+            ref={metricsSliderRef}
+            className="flex xl:grid xl:grid-cols-5 gap-3 md:gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory py-1 -mx-4 px-4 sm:mx-0 sm:px-0 flex-nowrap xl:flex-wrap"
+          >
+            <MetricCard
+              label="Total requests"
+              value={totalCount.toString()}
+              subtitle={currentUser.role === 'admin' ? 'Total all tickets' : 'Submitted by you'}
+              dotColor="blue"
+              className="w-[145px] sm:w-[170px] xl:w-auto shrink-0 xl:shrink snap-start min-h-[105px]"
+            />
+            <MetricCard
+              label="Open"
+              value={openCount.toString()}
+              subtitle={currentUser.role === 'admin' ? 'Awaiting assignment' : 'Waiting pickup'}
+              dotColor="purple"
+              className="w-[145px] sm:w-[170px] xl:w-auto shrink-0 xl:shrink snap-start min-h-[105px]"
+            />
+            <MetricCard
+              label="In progress"
+              value={inProgressCount.toString()}
+              subtitle="Being handled"
+              dotColor="cyan"
+              className="w-[145px] sm:w-[170px] xl:w-auto shrink-0 xl:shrink snap-start min-h-[105px]"
+            />
+            <MetricCard
+              label="Return"
+              value={returnCount.toString()}
+              subtitle="Needs revision"
+              dotColor="orange"
+              className="w-[145px] sm:w-[170px] xl:w-auto shrink-0 xl:shrink snap-start min-h-[105px]"
+            />
+            <MetricCard
+              label="Solved"
+              value={solvedCount.toString()}
+              subtitle="Completed"
+              dotColor="green"
+              className="w-[145px] sm:w-[170px] xl:w-auto shrink-0 xl:shrink snap-start min-h-[105px]"
+            />
+          </div>
         </div>
 
         {/* Bottom Split Section: Latest Requests Table (2/3 Width) & Ticket Trend Chart (1/3 Width) */}
@@ -228,7 +267,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {/* Requests Table Container */}
             <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto pr-1 custom-scrollbar">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full min-w-[480px] sm:min-w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-white z-10 shadow-[0_1px_0_0_#f1f5f9]">
                   <tr className="border-b border-slate-100 text-[11px] leading-[16px] font-semibold text-[#64748B]">
                     <th className="pb-2.5 pl-1 font-semibold w-[36px]">No</th>

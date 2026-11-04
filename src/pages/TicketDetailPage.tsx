@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/layout';
+import { Sidebar, AppHeader } from '@/components/layout';
 import { Card, Badge, Button } from '@/components/ui';
 import type { TicketRequestItem } from './DashboardPage';
 import { helpdeskApi } from '@/services/api';
@@ -73,6 +73,7 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
   onLogout,
   onUpdateTicket,
 }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [liveTicket, setLiveTicket] = useState<TicketRequestItem>(ticket);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -248,36 +249,20 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
         activeItem="my-tickets"
         userRole={currentUser.role}
         onLogout={onLogout}
+        currentUser={currentUser}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onOpenMobile={() => setIsMobileMenuOpen(true)}
         onNavigate={onNavigate}
       />
 
       {/* ================= MAIN CONTENT AREA ================= */}
-      <main className="flex-1 h-screen overflow-y-auto px-6 py-6 md:px-8 md:py-7 flex flex-col gap-6 custom-scrollbar">
-        {/* Top Header Row: Logo Helpdesk on Left, User Badge on Right */}
-        <div className="flex items-center justify-between flex-shrink-0 flex-wrap gap-4">
-          <img
-            src="/assets/helpdesk.png"
-            alt="Helpdesk Logo"
-            className="h-[42px] md:h-[48px] w-auto object-contain select-none"
-          />
-
-          <div className="flex items-center gap-3">
-            {/* User Profile Badge (Real Account Status) */}
-            <div className="flex items-center gap-2.5 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
-              <div className="w-[30px] h-[30px] rounded-full bg-[#DDE5ED] text-[#1E293B] font-bold text-[12px] flex items-center justify-center uppercase">
-                {currentUser.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[13px] font-semibold text-[#1E293B] leading-tight">
-                  {currentUser.name}
-                </span>
-                <span className="text-[10px] text-slate-500 font-medium">
-                  {currentUser.role === 'admin' ? 'IT Support Admin' : 'Employee (Pemohon)'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <main className="flex-1 h-screen overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-7 pb-24 lg:pb-8 flex flex-col gap-5 sm:gap-6 custom-scrollbar">
+        {/* Top Header */}
+        <AppHeader
+          currentUser={currentUser}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+        />
 
         {/* Back Link & Title Row */}
         <div className="flex flex-col gap-2 flex-shrink-0">
@@ -291,8 +276,8 @@ export const TicketDetailPage: React.FC<TicketDetailPageProps> = ({
           </button>
 
           {/* Ticket Title and Status Badge */}
-          <div className="flex items-center flex-wrap gap-3.5 mt-1">
-            <h1 className="text-[26px] md:text-[30px] leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px]">
+          <div className="flex items-center flex-wrap gap-2.5 sm:gap-3.5 mt-1">
+            <h1 className="text-[20px] sm:text-[25px] md:text-[30px] leading-[28px] sm:leading-[36px] font-extrabold text-[#0F172A] tracking-[-0.5px] break-words">
               {liveTicket.subject}
             </h1>
             <Badge status={liveTicket.status} />

@@ -15,24 +15,24 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     return (
       <div
         ref={ref}
-        className={`bg-white border border-[#E2E8F0]/70 rounded-[16px] p-[24px] min-h-[140px] flex flex-col justify-between shadow-[0_2px_10px_rgba(15,23,42,0.03)] hover:shadow-md transition-shadow select-none ${className}`}
+        className={`bg-white border border-[#E2E8F0]/80 rounded-[18px] p-4 sm:p-5 flex flex-col justify-between shadow-[0_2px_10px_rgba(15,23,42,0.03)] hover:shadow-md transition-shadow select-none ${className}`}
         {...props}
       >
         {/* Top: Indicator Dot + Label */}
-        <div className="flex items-center gap-[8px]">
-          <span className={`w-[8px] h-[8px] rounded-full flex-shrink-0 ${dotStyles}`} />
-          <span className="text-[13px] leading-[18px] font-medium text-[#1E293B]">
+        <div className="flex items-center gap-[7px] min-w-0">
+          <span className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${dotStyles}`} />
+          <span className="text-[12.5px] leading-[18px] font-medium text-[#1E293B] truncate">
             {label}
           </span>
         </div>
 
-        {/* Middle: Big Metric Number (36/40 ExtraBold) */}
-        <div className="text-[36px] leading-[40px] font-extrabold text-[#0F172A] my-2">
+        {/* Middle: Big Metric Number */}
+        <div className="text-[28px] sm:text-[32px] md:text-[36px] leading-[32px] sm:leading-[38px] font-extrabold text-[#0F172A] my-1 sm:my-1.5 tracking-tight">
           {value}
         </div>
 
         {/* Bottom: Subtitle / Context */}
-        <div className="text-[12px] leading-[16px] text-[#64748B]">
+        <div className="text-[11px] sm:text-[11.5px] leading-[15px] text-[#64748B] truncate">
           {subtitle}
         </div>
       </div>

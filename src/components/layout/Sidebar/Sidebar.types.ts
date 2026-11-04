@@ -5,4 +5,13 @@ export interface SidebarProps {
   onNavigate?: (item: ActiveMenuItem) => void;
   onLogout?: () => void;
   userRole?: 'user' | 'admin';
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
+  onOpenMobile?: () => void;
+  currentUser?: {
+    name?: string;
+    nik?: string;
+    department?: string;
+    role?: 'user' | 'admin';
+  };
 }

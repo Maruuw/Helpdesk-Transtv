@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui';
 import { initialLatestRequests, type TicketRequestItem } from '@/types/ticket';
 
@@ -56,6 +56,39 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({
 }) => {
   const [period, setPeriod] = useState<ChartPeriod>('hari');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(380);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        if (rect.width > 0) {
+          setContainerWidth(Math.round(rect.width));
+        }
+      }
+    };
+
+    updateDimensions();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width;
+          if (w > 0) {
+            setContainerWidth(Math.round(w));
+          }
+        }
+      });
+      ro.observe(containerRef.current);
+      return () => ro.disconnect();
+    } else {
+      window.addEventListener('resize', updateDimensions);
+      return () => window.removeEventListener('resize', updateDimensions);
+    }
+  }, []);
 
   // Komputasi Dataset Dinamis berdasarkan array tickets aktif & data API
   const datasets = useMemo<Record<ChartPeriod, PeriodDataset>>(() => {
@@ -144,12 +177,21 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({
 
   const currentData = datasets[period];
 
-  // Hitung dimensi SVG proporsional untuk kartu kompak (1/3 Width / 1 Column)
-  const chartWidth = 380;
-  const chartHeight = 165;
-  const paddingLeft = 28;
-  const paddingRight = 14;
-  const paddingTop = 16;
+  // Hitung dimensi SVG dinamis responsif (menyesuaikan layar tablet, mobile, dan desktop secara presisi)
+  const chartWidth = Math.max(containerWidth, 280);
+  const chartHeight = useMemo(() => {
+    if (containerWidth >= 640) {
+      return 235; // Tablet & widescreen: kurva lapang dan mengisi penuh section
+    }
+    if (containerWidth >= 480) {
+      return 210; // Medium tablet
+    }
+    return 185; // Mobile & compact 1/3 desktop column
+  }, [containerWidth]);
+
+  const paddingLeft = 30;
+  const paddingRight = 16;
+  const paddingTop = 18;
   const paddingBottom = 26;
 
   const innerWidth = chartWidth - paddingLeft - paddingRight;
@@ -278,10 +320,15 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({
       </div>
 
       {/* SVG Interactive Line Chart Container */}
-      <div className="relative w-full overflow-hidden select-none">
+      <div
+        ref={containerRef}
+        onMouseLeave={() => setHoveredIndex(null)}
+        className="relative w-full overflow-hidden select-none"
+      >
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="w-full h-[160px] md:h-[180px] overflow-visible"
+          className="w-full overflow-visible block"
+          style={{ height: `${chartHeight}px` }}
         >
           <defs>
             {/* Gradient Masuk */}
@@ -347,8 +394,8 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({
           {currentData.labels.map((label, idx) => {
             const x = xCoords[idx];
             const isHovered = hoveredIndex === idx;
-            // Pada tampilan bulanan kompak, tampilkan selang-seling agar tidak bertumpuk
-            const shouldRender = period !== 'bulan' || idx % 2 === 0 || isHovered;
+            // Pada tampilan bulanan, tampilkan semua bulan jika layar cukup lebar (tablet/desktop)
+            const shouldRender = period !== 'bulan' || chartWidth >= 480 || idx % 2 === 0 || isHovered;
             if (!shouldRender) return null;
 
             return (
@@ -387,7 +434,7 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({
 
             return (
               <g key={idx}>
-                {/* Invisible broad hitbox for easy hovering */}
+                {/* Invisible broad hitbox for easy hovering & touch tapping */}
                 <rect
                   x={x - (innerWidth / currentData.labels.length) / 2}
                   y={paddingTop}
@@ -396,6 +443,7 @@ export const TicketTrendChart: React.FC<TicketTrendChartProps> = ({
                   fill="transparent"
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredIndex(idx)}
+                  onTouchStart={() => setHoveredIndex(idx)}
                 />
 
                 {/* Incoming Point */}

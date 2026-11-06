@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import * as XLSX from 'xlsx-js-style';
 import { Sidebar, AppHeader } from '@/components/layout';
 import type { AppView } from '@/App';
 import {
@@ -270,8 +271,14 @@ export const ReportPage: React.FC<ReportPageProps> = ({
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const currentItems = filteredData.slice(startIndex, endIndex);
 
-  // Export to Excel / CSV function
+  // Export to Native Microsoft Excel (.xlsx) dengan kolom rapi terpisah
   const handleExportToExcel = () => {
+    if (!filteredData || filteredData.length === 0) {
+      setToastMessage('Tidak ada data tiket untuk diekspor!');
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
+
     const headers = [
       'No',
       'No Tiket',
@@ -281,48 +288,141 @@ export const ReportPage: React.FC<ReportPageProps> = ({
       'Department',
       'Group',
       'Handled By',
-      'Solution',
+      'Solution / Detail Permasalahan',
       'Category Detail',
       'Handled On',
       'Year',
       'Month',
     ];
 
-    const rows = filteredData.map((item, idx) => [
+    const dataRows = filteredData.map((item, idx) => [
       idx + 1,
-      `"${item.id}"`,
-      `"${item.ticketSubject.replace(/"/g, '""')}"`,
-      `"${item.ticketSubtitle.replace(/"/g, '""')}"`,
-      `"${item.requesterName.replace(/"/g, '""')}"`,
-      `"${item.requesterDept.replace(/"/g, '""')}"`,
-      `"${item.group.replace(/"/g, '""')}"`,
-      `"${item.handledByName.replace(/"/g, '""')}"`,
-      `"${item.solution.replace(/"/g, '""')}"`,
-      `"${item.categoryDetail.replace(/"/g, '""')}"`,
-      `"${item.handledOn.replace(/"/g, '""')}"`,
+      item.id,
+      item.ticketSubject,
+      item.ticketSubtitle,
+      item.requesterName,
+      item.requesterDept,
+      item.group,
+      item.handledByName,
+      item.solution,
+      item.categoryDetail,
+      item.handledOn,
       item.year,
-      `"${item.month}"`,
+      item.month,
     ]);
 
-    // UTF-8 BOM for Microsoft Excel compatibility
-    const csvContent =
-      '\uFEFF' +
-      [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
+    // Buat worksheet dari array 2 dimensi
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Atur lebar kolom yang proporsional agar teks tidak terpotong di Excel
+    worksheet['!cols'] = [
+      { wch: 6 },  // No
+      { wch: 16 }, // No Tiket
+      { wch: 34 }, // Ticket Subject
+      { wch: 32 }, // Ticket Subcategory
+      { wch: 24 }, // Requested By
+      { wch: 24 }, // Department
+      { wch: 26 }, // Group
+      { wch: 24 }, // Handled By
+      { wch: 50 }, // Solution
+      { wch: 36 }, // Category Detail
+      { wch: 20 }, // Handled On
+      { wch: 10 }, // Year
+      { wch: 14 }, // Month
+    ];
+
+    // Atur tinggi baris (Row Heights)
+    const rowHeights = [{ hpt: 28 }]; // Header row: 28pt (lega dan proporsional)
+    for (let i = 1; i <= dataRows.length; i++) {
+      rowHeights.push({ hpt: 22 }); // Data rows: 22pt
+    }
+    worksheet['!rows'] = rowHeights;
+
+    // Styling Sel per Baris dan Kolom (Warna Header TRANS TV, Border, Alignment, dan Zebra Rows)
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = worksheet[cellAddress];
+        if (!cell) continue;
+
+        if (R === 0) {
+          // ================= HEADER TITLE STYLING =================
+          cell.s = {
+            fill: {
+              fgColor: { rgb: '0C3E7E' }, // Corporate Navy Blue TRANS TV
+            },
+            font: {
+              name: 'Calibri',
+              sz: 11,
+              bold: true,
+              color: { rgb: 'FFFFFF' }, // Teks Putih Tebal
+            },
+            alignment: {
+              vertical: 'center',
+              horizontal: 'center',
+              wrapText: true,
+            },
+            border: {
+              top: { style: 'thin', color: { rgb: '072A56' } },
+              bottom: { style: 'medium', color: { rgb: '072A56' } },
+              left: { style: 'thin', color: { rgb: '1E40AF' } },
+              right: { style: 'thin', color: { rgb: '1E40AF' } },
+            },
+          };
+        } else {
+          // ================= DATA ROWS STYLING =================
+          const isEvenRow = R % 2 === 0;
+          const isCenterCol = [0, 1, 10, 11, 12].includes(C); // No, No Tiket, Handled On, Year, Month
+
+          cell.s = {
+            fill: {
+              // Zebra alternating row colors untuk kemudahan membaca baris
+              fgColor: { rgb: isEvenRow ? 'F8FAFC' : 'FFFFFF' },
+            },
+            font: {
+              name: 'Calibri',
+              sz: 10,
+              color: { rgb: '1E293B' },
+            },
+            alignment: {
+              vertical: 'center',
+              horizontal: isCenterCol ? 'center' : 'left',
+              wrapText: false,
+            },
+            border: {
+              top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+              bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+              left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+              right: { style: 'thin', color: { rgb: 'E2E8F0' } },
+            },
+          };
+        }
+      }
+    }
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Tiket');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `Report_Helpdesk_TRANS_TV_${dateStr}.xlsx`;
+
+    // Buat file binary .xlsx dan download via Blob
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute(
-      'download',
-      `Report_Helpdesk_TRANS_TV_${new Date().toISOString().slice(0, 10)}.csv`
-    );
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     // Show friendly confirmation toast
-    setToastMessage(`Laporan berhasil diekspor (${filteredData.length} baris data tiket database)!`);
+    setToastMessage(`Laporan berhasil diekspor (${filteredData.length} baris data tiket ke format Excel .xlsx)!`);
     setTimeout(() => setToastMessage(null), 4000);
   };
 
